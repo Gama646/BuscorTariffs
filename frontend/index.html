@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bus Tickets | Buscor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="page-shell">
+      <header class="topbar">
+        <a class="brand" href="https://www.buscor.co.za/" target="_blank" rel="noreferrer">Buscor</a>
+        <nav class="nav-links">
+          <a href="https://www.buscor.co.za/tariffs/" target="_blank" rel="noreferrer">Tariffs</a>
+          <a href="https://www.buscor.co.za/charter-services/" target="_blank" rel="noreferrer">Charter Services</a>
+          <a href="https://www.buscor.co.za/help-center/" target="_blank" rel="noreferrer">Help Centre</a>
+          <a href="https://www.buscor.co.za/about-us/" target="_blank" rel="noreferrer">About Buscor</a>
+          <a href="#payment-chooser">Pay for a ticket</a>
+        </nav>
+      </header>
+
+      <section class="hero-card" id="ticket-info">
+        <div class="hero-copy">
+          <p class="eyebrow">Routes and tariffs</p>
+          <h1>Book, review and pay for your Buscor trip in one place.</h1>
+          <p class="lead">
+            Use the official Buscor tariff structure for Nelspruit, White River, Malalane and surrounding areas.
+            Weekly scholar tickets are R144.00 and monthly scholar tickets are R634.00.
+          </p>
+          <div class="cta-row">
+            <a class="primary-btn" href="#payment-chooser">Pay for a ticket</a>
+            <a class="ghost-btn" href="#trip-options">See available trips</a>
+            <a class="ghost-btn" href="https://www.buscor.co.za/tariffs/" target="_blank" rel="noreferrer">Visit Buscor tariffs</a>
+          </div>
+        </div>
+
+        <aside class="info-panel">
+          <h2>Ticket information</h2>
+          <ul>
+            <li>Tickets can be bought from Buscor outlets and selected Spar/Boxer stores.</li>
+            <li>Weekly scholar tickets: R144.00</li>
+            <li>Monthly scholar tickets: R634.00</li>
+            <li>Routes cover Nelspruit, White River, Malalane and surrounding towns.</li>
+          </ul>
+        </aside>
+      </section>
+
+      <section class="cards-grid" id="trip-options">
+        <article class="mini-card accent-card">
+          <h3>Live tariff table</h3>
+          <p>Use the Buscor tariff table and filter trips by area, route, and ticket type before choosing a payment option.</p>
+          <strong>From the official tariff page</strong>
+        </article>
+        <article class="mini-card">
+          <h3>Nelspruit Area</h3>
+          <p>Routes from Nelspruit suburbs, Lekazi, Kabokweni, Matsulu and other commuter zones.</p>
+          <strong>5 Day to 26 Day tickets</strong>
+        </article>
+        <article class="mini-card">
+          <h3>White River Area</h3>
+          <p>White River, Hazyview, Mkhuhlu, Kiepersol and nearby commuter corridors.</p>
+          <strong>Weekly / monthly tariff view</strong>
+        </article>
+        <article class="mini-card">
+          <h3>Malalane Area</h3>
+          <p>Malalane, Hectorspruit, Mbuzini and agricultural routes across the eastern corridor.</p>
+          <strong>New tariff and cash tariff</strong>
+        </article>
+      </section>
+
+      <section class="trip-table-card">
+        <div class="trip-table-header">
+          <div>
+            <p class="eyebrow">Trip filtering</p>
+            <h2>Filter trips by operating area</h2>
+            <p class="lead">Use the real Buscor tariff table structure with From, To, Ticket Type, New Tariff and New Cash Tariff values.</p>
+          </div>
+          <div class="filter-row">
+            <button class="chip active" data-area="All Areas" type="button">All Areas</button>
+            <button class="chip" data-area="Nelspruit Area" type="button">Nelspruit Area</button>
+            <button class="chip" data-area="White River Area" type="button">White River Area</button>
+            <button class="chip" data-area="Malalane Area" type="button">Malalane Area</button>
+          </div>
+        </div>
+
+        <div class="toolbar-row">
+          <label class="search-box">
+            <span>Search route</span>
+            <input id="routeSearch" type="search" placeholder="Search from or to..." />
+          </label>
+          <label class="search-box small">
+            <span>Ticket type</span>
+            <select id="ticketFilter">
+              <option value="All">All ticket types</option>
+              <option value="5 Day">5 Day</option>
+              <option value="6 Day">6 Day</option>
+              <option value="7 Day">7 Day</option>
+              <option value="22 Day">22 Day</option>
+              <option value="26 Day">26 Day</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="table-wrap">
+          <div class="table-topbar">
+            <p id="pageInfo" class="page-info">Showing 0 routes</p>
+            <div class="page-controls">
+              <button class="page-btn" id="prevPageBtn" type="button">Previous</button>
+              <span id="pageLabel" class="page-label">Page 1</span>
+              <button class="page-btn" id="nextPageBtn" type="button">Next</button>
+            </div>
+          </div>
+          <table class="fare-table">
+            <thead>
+              <tr>
+                <th>From</th>
+                <th>To</th>
+                <th>Ticket Type</th>
+                <th>New Tariff</th>
+                <th>New Cash Tariff</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="fareTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="payment-card" id="payment-chooser">
+        <div>
+          <p class="eyebrow">Payment flow</p>
+          <h2>Refill your Buscor card before boarding</h2>
+          <p class="lead">
+            Enter your Alias number and validate it first. After validation, choose the trip and ticket type to proceed.
+          </p>
+        </div>
+
+        <form class="payment-form" id="ticketForm">
+          <label>
+            Alias Number
+            <input id="cardNumber" type="text" placeholder="Enter your Alias number" maxlength="16" />
+          </label>
+
+          <button class="primary-btn full-width" type="button" id="validateCardButton">Validate Alias</button>
+          <p id="cardStatus" class="card-status">Enter your Alias number, then validate before selecting a trip.</p>
+
+          <label>
+            Area
+            <select id="areaSelect" disabled></select>
+          </label>
+
+          <label>
+            From
+            <select id="fromSelect" disabled></select>
+          </label>
+
+          <label>
+            To
+            <select id="toSelect"></select>
+          </label>
+
+          <label>
+            Ticket Type
+            <select id="ticketTypeSelect" disabled></select>
+          </label>
+
+          <p id="priceDisplay" class="price-badge">Price will update here.</p>
+
+          <button class="primary-btn full-width" type="button" id="payButton" disabled>Continue to payment</button>
+        </form>
+      </section>
+
+      <section class="summary-card" id="summaryPanel" aria-live="polite">
+        <h3>Payment summary</h3>
+        <p id="summaryText">Choose a route and ticket type to see your payment summary.</p>
+        <button class="ghost-btn" type="button" id="resetButton">Reset</button>
+      </section>
+
+      <section class="support-card" id="support">
+        <h2>Need help?</h2>
+        <p>Call Buscor on 013 754 6246/7/8 or visit the Help Centre for ticket and refund guidance.</p>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
