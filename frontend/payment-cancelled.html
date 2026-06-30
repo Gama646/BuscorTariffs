@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Buscor – Payment Cancelled</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      padding: 40px 36px;
+      max-width: 440px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .logo  { font-size: 1.6rem; font-weight: 700; color: #1a3c6e; margin-bottom: 28px; }
+    .icon  { font-size: 3rem; margin-bottom: 16px; }
+    h2     { color: #744210; font-size: 1.4rem; margin-bottom: 12px; }
+    p      { color: #4a5568; font-size: 0.95rem; line-height: 1.6; margin-bottom: 8px; }
+    .ref   { font-size: 0.82rem; color: #a0aec0; margin: 12px 0 28px; }
+
+    .btn {
+      display: inline-block;
+      padding: 11px 28px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-decoration: none;
+      margin: 6px;
+    }
+    .btn-primary   { background: #1a3c6e; color: #fff; }
+    .btn-secondary { background: #e2e8f0; color: #2d3748; }
+    .btn-primary:hover   { background: #14306e; }
+    .btn-secondary:hover { background: #cbd5e0; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">🚌 Buscor</div>
+  <div class="icon">⚠️</div>
+  <h2>Payment Cancelled</h2>
+  <p>You cancelled the payment. No money was taken and no trips were loaded onto your card.</p>
+  <p class="ref" id="ref-line"></p>
+  <a class="btn btn-primary"   href="/">Try Again</a>
+  <a class="btn btn-secondary" href="/">Back to Home</a>
+</div>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const txId   = params.get('txId');
+  if (txId) {
+    document.getElementById('ref-line').textContent = `Reference: ${txId}`;
+  }
+</script>
+</body>
+</html>

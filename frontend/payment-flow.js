@@ -18,23 +18,8 @@ async function startPayment(aliasNo, area, from, to, ticketType) {
       return;
     }
 
-    // Build a hidden form and auto-submit it to PayFast.
-    // This is the standard PayFast redirect pattern — no card details
-    // ever touch your own server.
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = data.payfastHost;
-
-    for (const [key, value] of Object.entries(data.fields)) {
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = key;
-      input.value = value;
-      form.appendChild(input);
-    }
-
-    document.body.appendChild(form);
-    form.submit();
+    // Ozow's hosted page is a simple GET redirect — no hidden form needed.
+    window.location.href = data.paymentUrl;
 
   } catch (err) {
     console.error(err);
@@ -43,10 +28,10 @@ async function startPayment(aliasNo, area, from, to, ticketType) {
 }
 
 // ---------------------------------------------------------------------
-// On the return_url page (payment-success.html), poll for the real
-// outcome. PayFast's return_url is just where the BROWSER lands — it does
-// NOT guarantee payment succeeded. The ITN webhook is the source of truth,
-// so we poll our own /status endpoint until it reflects "paid" or "failed".
+// On the success page (payment-success.html), poll for the real outcome.
+// Ozow's SuccessUrl is just where the BROWSER lands — it does NOT guarantee
+// payment succeeded. The notification webhook is the source of truth, so we
+// poll our own /status endpoint until it reflects "paid" or "failed".
 // ---------------------------------------------------------------------
 async function checkPaymentOutcome(txId, attempt = 1) {
   try {
@@ -67,7 +52,7 @@ async function checkPaymentOutcome(txId, attempt = 1) {
         '. No trips were loaded onto your card. Please try again.'
       );
     } else if (attempt < 15) {
-      // still pending — ITN may take a few seconds. Keep polling.
+      // still pending — notification may take a few seconds. Keep polling.
       setTimeout(() => checkPaymentOutcome(txId, attempt + 1), 1500);
     } else {
       showFailureMessage('Payment is taking longer than expected. Please contact support with reference: ' + txId);
@@ -106,8 +91,10 @@ async function showSuccessAndDownloadSlip(txId) {
 }
 
 function downloadSlipAsFile(slip) {
-  // Simple text/HTML slip for now. Swap this for a PDFKit-generated
-  // PDF endpoint later if you want a branded document.
+  const t = slip.ticket;
+  const startDate  = t ? new Date(t.startDate).toLocaleDateString('en-ZA')  : '-';
+  const expiryDate = t ? new Date(t.expiryDate).toLocaleDateString('en-ZA') : '-';
+
   const content = `
 BUSCOR (PTY) LTD - Payment Receipt
 -----------------------------------
@@ -115,6 +102,9 @@ Reference: ${slip.txId}
 Card: ${slip.aliasNo}
 Route: ${slip.trip.from} -> ${slip.trip.to}
 Ticket type: ${slip.trip.ticketType}
+Start Date: ${startDate}
+Valid Until: ${expiryDate}
+Valid Days: ${t ? t.validDays : ''}
 Amount paid: R ${Number(slip.amount).toFixed(2)}
 Paid at: ${new Date(slip.paidAt).toLocaleString('en-ZA')}
 Status: PAID

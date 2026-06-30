@@ -15,7 +15,7 @@ let cardsCollection;
 let tripsCollection;
 let purchasesCollection;
 
-// Load trips data from project fileh
+// Load trips data from project file
 let seedTrips = [];
 try {
   // generatedTrips.js exports the trips array
@@ -82,7 +82,7 @@ MongoClient.connect(MONGODB_URL, { useUnifiedTopology: true })
       aliasQuery,
       normalizeAliasNo
     }));
-    console.log('✓ Payment routes mounted at /api/payment');
+    console.log('✓ Payment routes mounted at /api/payment (Ozow)');
   })
   .catch(error => {
     console.error('✗ Failed to connect to MongoDB:', error.message);
@@ -231,12 +231,12 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Purchase endpoint: create a purchase and return a slip
-// NOTE: this is the original, unpaid "purchase" flow (no PayFast involved).
-// It's kept here for backward compatibility, but for real payments use
-// /api/payment/initiate (see payment-routes.js), which validates pricing
-// server-side and confirms payment via PayFast's ITN webhook before any
-// trip is considered paid for.
+// Legacy purchase endpoint: create a purchase and return a slip
+// NOTE: this is the original, unpaid "purchase" flow (no payment gateway
+// involved). Kept here for backward compatibility, but for real payments
+// use /api/payment/initiate (see payment-routes.js + ozow.js), which
+// validates pricing server-side and confirms payment via Ozow's
+// notification webhook before any trip/ticket is considered paid for.
 app.post('/api/purchases', async (req, res) => {
   const { aliasNo, trip } = req.body;
 
@@ -338,8 +338,8 @@ app.listen(PORT, () => {
   console.log(`  POST /api/cards/validate - Validate Alias number (returns card info if valid)`);
   console.log(`  GET  /api/cards/:aliasNo - Get card details by Alias number`);
   console.log(`  GET  /api/cards/:aliasNo/check - Quick check if Alias number is active`);
-  console.log(`  POST /api/payment/initiate - Start a PayFast payment for a trip`);
-  console.log(`  POST /api/payment/notify - PayFast ITN webhook (server-to-server)`);
+  console.log(`  POST /api/payment/initiate - Start an Ozow payment for a trip`);
+  console.log(`  POST /api/payment/notify - Ozow notification webhook (server-to-server)`);
   console.log(`  GET  /api/payment/status/:txId - Poll payment status`);
   console.log(`  GET  /api/payment/slip/:txId - Get paid slip`);
   console.log(`  GET  /api/health - Health check`);

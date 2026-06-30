@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Buscor – Payment</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      padding: 40px 36px;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .logo { font-size: 1.6rem; font-weight: 700; color: #1a3c6e; margin-bottom: 28px; }
+
+    /* Spinner */
+    .spinner {
+      width: 52px; height: 52px;
+      border: 5px solid #e2e8f0;
+      border-top-color: #1a3c6e;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+      margin: 0 auto 20px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .status-msg { color: #4a5568; font-size: 1rem; margin-bottom: 8px; }
+    .sub-msg    { color: #a0aec0; font-size: 0.875rem; }
+
+    /* Success box */
+    .success-box { display: none; }
+    .icon-success { font-size: 3rem; margin-bottom: 12px; }
+    .success-box h2 { color: #276749; font-size: 1.4rem; margin-bottom: 16px; }
+
+    .slip {
+      background: #f7fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 16px 20px;
+      text-align: left;
+      margin-bottom: 20px;
+    }
+    .slip-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 0.9rem; color: #2d3748; }
+    .slip-row span:first-child { color: #718096; }
+    .slip-row.total span:last-child { font-weight: 700; color: #276749; font-size: 1rem; }
+
+    /* Failure box */
+    .failure-box { display: none; }
+    .icon-failure { font-size: 3rem; margin-bottom: 12px; }
+    .failure-box h2 { color: #9b2335; font-size: 1.4rem; margin-bottom: 12px; }
+    .failure-box p  { color: #4a5568; font-size: 0.9rem; margin-bottom: 20px; }
+
+    /* Buttons */
+    .btn {
+      display: inline-block;
+      padding: 11px 28px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-decoration: none;
+      margin: 6px;
+    }
+    .btn-primary   { background: #1a3c6e; color: #fff; }
+    .btn-secondary { background: #e2e8f0; color: #2d3748; }
+    .btn-primary:hover   { background: #14306e; }
+    .btn-secondary:hover { background: #cbd5e0; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">🚌 Buscor</div>
+
+  <!-- Pending / polling state -->
+  <div id="pending">
+    <div class="spinner"></div>
+    <p class="status-msg">Confirming your payment…</p>
+    <p class="sub-msg">Please wait, this usually takes a few seconds.</p>
+  </div>
+
+  <!-- Success state -->
+  <div class="success-box" id="success">
+    <div class="icon-success">✅</div>
+    <h2>Payment Successful!</h2>
+    <div class="slip" id="slip-details"></div>
+    <p class="sub-msg" style="margin-bottom:20px;">Your receipt has downloaded automatically.</p>
+    <button class="btn btn-primary"    id="btn-download">Download Receipt Again</button>
+    <a     class="btn btn-secondary"   href="/">Back to Home</a>
+  </div>
+
+  <!-- Failure state -->
+  <div class="failure-box" id="failure">
+    <div class="icon-failure">❌</div>
+    <h2>Payment Not Successful</h2>
+    <p id="failure-msg">No trips were loaded onto your card.</p>
+    <a class="btn btn-primary" href="/">Try Again</a>
+  </div>
+</div>
+
+<script>
+  // ── Helpers ──────────────────────────────────────────────────────
+  const params = new URLSearchParams(window.location.search);
+  const txId   = params.get('txId');
+
+  function show(id) {
+    ['pending','success','failure'].forEach(x => {
+      document.getElementById(x).style.display = (x === id ? '' : 'none');
+    });
+    if (id !== 'pending') {
+      document.getElementById('pending').style.display = 'none';
+    }
+  }
+
+  function showFailure(msg) {
+    document.getElementById('failure-msg').textContent =
+      (msg || 'Payment was not successful.') + ' No trips were loaded onto your card.';
+    document.getElementById('failure').style.display = 'block';
+    document.getElementById('pending').style.display = 'none';
+  }
+
+  function renderSlip(slip) {
+    const t = slip.ticket; // may be undefined if card wasn't linked
+    const paidAt = new Date(slip.paidAt).toLocaleString('en-ZA');
+    const startDate  = t ? new Date(t.startDate).toLocaleDateString('en-ZA')  : '—';
+    const expiryDate = t ? new Date(t.expiryDate).toLocaleDateString('en-ZA') : '—';
+
+    document.getElementById('slip-details').innerHTML = `
+      <div class="slip-row"><span>Receipt Ref</span>   <span>${slip.txId}</span></div>
+      ${slip.cardNo ? `<div class="slip-row"><span>Card No</span>      <span>${slip.cardNo}</span></div>` : ''}
+      <div class="slip-row"><span>Alias No</span>      <span>${slip.aliasNo}</span></div>
+      <div class="slip-row"><span>Type</span>          <span>${slip.trip.ticketType}</span></div>
+      <div class="slip-row"><span>Start Date</span>    <span>${startDate}</span></div>
+      <div class="slip-row"><span>Valid Until</span>   <span>${expiryDate}</span></div>
+      <div class="slip-row"><span>Valid Days</span>    <span>${t ? t.validDays : 'MTWTFSs'}</span></div>
+      <div class="slip-row"><span>From</span>          <span>${slip.trip.from}</span></div>
+      <div class="slip-row"><span>To</span>             <span>${slip.trip.to}</span></div>
+      <div class="slip-row"><span>Paid at</span>       <span>${paidAt}</span></div>
+      <div class="slip-row total"><span>Price</span>   <span>R ${Number(slip.amount).toFixed(2)}</span></div>
+    `;
+
+    document.getElementById('btn-download').onclick = () => downloadReceipt(slip);
+    downloadReceipt(slip); // auto-download once on load
+  }
+
+  function downloadReceipt(slip) {
+    const t = slip.ticket;
+    const paidAt = new Date(slip.paidAt).toLocaleString('en-ZA');
+    const startDate  = t ? new Date(t.startDate).toLocaleDateString('en-ZA')  : '-';
+    const expiryDate = t ? new Date(t.expiryDate).toLocaleDateString('en-ZA') : '-';
+
+    const content = [
+      'BUSCOR (PTY) LTD - TICKET RECEIPT',
+      '------------------------------------',
+      `Receipt Ref : ${slip.txId}`,
+      slip.cardNo ? `Card No     : ${slip.cardNo}` : null,
+      `Alias No    : ${slip.aliasNo}`,
+      `Type        : ${slip.trip.ticketType}`,
+      `Start Date  : ${startDate}`,
+      `Valid Until : ${expiryDate}`,
+      `Valid Days  : ${t ? t.validDays : 'MTWTFSs'}`,
+      `From        : ${slip.trip.from}`,
+      `To          : ${slip.trip.to}`,
+      `Price       : R ${Number(slip.amount).toFixed(2)}`,
+      `Paid at     : ${paidAt}`,
+      `Status      : PAID`
+    ].filter(Boolean).join('\n');
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `Buscor-Receipt-${slip.txId}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // ── Polling ───────────────────────────────────────────────────────
+  async function checkStatus(attempt = 1) {
+    if (!txId) { showFailure('No transaction reference found in URL.'); return; }
+
+    try {
+      const res  = await fetch(`/api/payment/status/${txId}`);
+      const data = await res.json();
+
+      if (!data.success) { showFailure('Could not find this transaction.'); return; }
+
+      if (data.status === 'paid') {
+        // Fetch the full slip to render
+        const slipRes  = await fetch(`/api/payment/slip/${txId}`);
+        const slipData = await slipRes.json();
+        if (slipData.success) {
+          renderSlip(slipData.slip);
+          document.getElementById('success').style.display = 'block';
+          document.getElementById('pending').style.display = 'none';
+        } else {
+          showFailure(`Payment succeeded but slip could not be loaded. Reference: ${txId}`);
+        }
+
+      } else if (data.status === 'failed') {
+        showFailure('Payment was not successful' + (data.failReason ? ` (${data.failReason})` : '') + '.');
+
+      } else if (attempt < 20) {
+        // Still pending — keep polling every 1.5 s (up to 30 s total)
+        setTimeout(() => checkStatus(attempt + 1), 1500);
+
+      } else {
+        showFailure(`Payment is taking longer than expected. Contact support with reference: ${txId}`);
+      }
+
+    } catch (err) {
+      console.error(err);
+      if (attempt < 20) {
+        setTimeout(() => checkStatus(attempt + 1), 2000);
+      } else {
+        showFailure('Network error while confirming payment.');
+      }
+    }
+  }
+
+  // Start
+  checkStatus();
+</script>
+</body>
+</html>
