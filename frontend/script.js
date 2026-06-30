@@ -23,6 +23,10 @@ const priceDisplay = document.getElementById('priceDisplay');
 const cardNumberInput = document.getElementById('cardNumber');
 const validateCardButton = document.getElementById('validateCardButton');
 const cardStatus = document.getElementById('cardStatus');
+const popupOverlay = document.getElementById('popupOverlay');
+const popupTitle = document.getElementById('popupTitle');
+const popupMessage = document.getElementById('popupMessage');
+const popupCloseBtn = document.getElementById('popupCloseBtn');
 
 // Pagination elements
 const prevPageBtn = document.getElementById('prevPageBtn');
@@ -229,6 +233,33 @@ function updateCardStatus(message, valid = false) {
     updatePriceDisplay();
   }
 }
+
+function showPopup(title, message) {
+  if (!popupOverlay || !popupTitle || !popupMessage) {
+    alert(`${title}: ${message}`);
+    return;
+  }
+
+  popupTitle.textContent = title;
+  popupMessage.textContent = message;
+  popupOverlay.classList.add('active');
+  popupOverlay.setAttribute('aria-hidden', 'false');
+}
+
+window.showPopup = showPopup;
+
+function hidePopup() {
+  if (!popupOverlay) return;
+  popupOverlay.classList.remove('active');
+  popupOverlay.setAttribute('aria-hidden', 'true');
+}
+
+popupCloseBtn?.addEventListener('click', hidePopup);
+popupOverlay?.addEventListener('click', (event) => {
+  if (event.target === popupOverlay) {
+    hidePopup();
+  }
+});
 
 // Add Event Listeners
 areaSelect.addEventListener('change', () => {

@@ -750,12 +750,47 @@ body {
   text-align: center;
 }
 
-.support-card h2 {
-  font-size: 28px;
-  font-weight: 700;
-  margin: 0 0 16px 0;
-}
+  .popup-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.6);
+    padding: 20px;
+  }
 
+  .popup-overlay.active {
+    display: flex;
+  }
+
+  .popup-card {
+    background: white;
+    border-radius: 18px;
+    width: min(460px, 100%);
+    max-width: 460px;
+    padding: 28px 28px 24px;
+    box-shadow: 0 18px 50px rgba(15, 23, 42, 0.2);
+    text-align: center;
+  }
+
+  .popup-header h2 {
+    margin-bottom: 14px;
+    font-size: 22px;
+    color: #1a3c6e;
+  }
+
+  .popup-card p {
+    color: #334155;
+    font-size: 15px;
+    line-height: 1.7;
+    margin-bottom: 24px;
+  }
+
+  .popup-card .primary-btn {
+    width: 100%;
+  }
 .support-card p {
   font-size: 16px;
   opacity: 0.95;

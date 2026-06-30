@@ -57,12 +57,44 @@ function buildValidDaysCode(durationDays) {
   return 'MTWTFS' + (includesSunday ? 'S' : 's');
 }
 
+function formatExpiryDate(expiry) {
+  if (!expiry) return null;
+  const pad = n => String(n).padStart(2, '0');
+  return `${pad(expiry.getDate())}/${pad(expiry.getMonth() + 1)}/${expiry.getFullYear()}`;
+}
+
+function getNextMonday(date) {
+  const next = new Date(date);
+  next.setHours(0, 0, 0, 0);
+  const day = next.getDay();
+  const daysUntilNextMonday = day === 0 ? 1 : 8 - day;
+  next.setDate(next.getDate() + daysUntilNextMonday);
+  return next;
+}
+
+function getRequestedPurchaseInfo(purchasesCollection, aliasNo) {
+  const now = new Date();
+  return purchasesCollection
+    .find({ aliasNo, status: 'paid', 'ticket.expiryDate': { $gt: now } })
+    .sort({ 'ticket.expiryDate': -1 })
+    .limit(1)
+    .next();
+}
+
+function getDaysRemaining(expiryDate) {
+  if (!expiryDate) return Infinity;
+  const now = new Date();
+  const expiry = new Date(expiryDate);
+  const diffMs = expiry.getTime() - now.getTime();
+  return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+}
+
 // Builds the "active ticket" object stored on the card — this mirrors the
 // fields printed on the physical receipt (Type, Start Date, Valid Days,
 // From, To, Price) so the driver's scanner can display the same info.
-function buildTicketFromPurchase(purchase, txId, payfastFields, paidAt) {
+function buildTicketFromPurchase(purchase, txId, payfastFields, paidAt, forceNextMonday = false) {
   const durationDays = parseTicketDurationDays(purchase.trip.ticketType);
-  const startDate = getTicketStartDate(paidAt); // anchored to a Monday — see rule above
+  const startDate = forceNextMonday ? getNextMonday(paidAt) : getTicketStartDate(paidAt); // anchored to a Monday
   const expiryDate = new Date(startDate);
   expiryDate.setDate(expiryDate.getDate() + durationDays);
 
@@ -105,9 +137,11 @@ function createPaymentRouter({ cardsCollection, tripsCollection, purchasesCollec
   // POST /api/payment/initiate
   // ---------------------------------------------------------------
   router.post('/initiate', async (req, res) => {
+    console.log('→ /api/payment/initiate called', { body: req.body });
     const { aliasNo, area, from, to, ticketType } = req.body;
 
     if (!aliasNo || !from || !to || !ticketType) {
+      console.warn('→ /api/payment/initiate missing fields', { aliasNo, area, from, to, ticketType });
       return res.status(400).json({ success: false, message: 'Missing required fields.' });
     }
 
@@ -119,6 +153,20 @@ function createPaymentRouter({ cardsCollection, tripsCollection, purchasesCollec
       }
       if (card.isActive === false) {
         return res.status(403).json({ success: false, message: 'This card is inactive or blocked.' });
+      }
+
+      const existingPurchase = await getRequestedPurchaseInfo(purchasesCollection, normalized);
+      let startsNextMonday = false;
+      if (existingPurchase) {
+        const daysRemaining = getDaysRemaining(existingPurchase.ticket.expiryDate);
+        if (daysRemaining > 2) {
+          const expiryDate = new Date(existingPurchase.ticket.expiryDate);
+          return res.status(403).json({
+            success: false,
+            message: `This alias already has an active ticket until ${formatExpiryDate(expiryDate)}. You cannot buy another ticket until the current one expires.`
+          });
+        }
+        startsNextMonday = true;
       }
 
       // Look up the trip to get the authoritative price — never trust amount from the client.
@@ -152,16 +200,18 @@ function createPaymentRouter({ cardsCollection, tripsCollection, purchasesCollec
       const purchase = {
         txId,
         aliasNo: normalized,
-        cardNo: card.Card_No || card.cardNo || card.CardNo || null,
+        cardNo: card['Card No'] || card.Card_No || card.cardNo || card.CardNo || null,
         cardRef: card._id || null,
         trip: { area: trip.area, from: trip.from, to: trip.to, ticketType: trip.ticketType, validDays: trip.validDays || null },
         amount,
         status: 'pending',
+        startsNextMonday,
         createdAt: new Date(),
         updatedAt: new Date()
       };
 
-      await purchasesCollection.insertOne(purchase);
+      const insertResult = await purchasesCollection.insertOne(purchase);
+      console.log('✓ purchase document created', { txId, insertedId: insertResult.insertedId, purchase });
 
       const fields = buildPaymentFields({
         txId,
@@ -208,6 +258,7 @@ function createPaymentRouter({ cardsCollection, tripsCollection, purchasesCollec
 
       try {
         parsed = querystring.parse(rawBody);
+        console.log('← /api/payment/notify received', { parsed: { m_payment_id: parsed.m_payment_id, payment_status: parsed.payment_status, amount_gross: parsed.amount_gross } });
       } catch (err) {
         console.error('ITN parse error:', err);
         return res.status(400).send('Bad request');
@@ -261,43 +312,64 @@ function createPaymentRouter({ cardsCollection, tripsCollection, purchasesCollec
 
         const now = new Date();
 
+        // Build the full ticket/receipt detail once — used for both the
+        // purchase record (full history of what was paid for) and the
+        // card's activeTicket (what the driver's scanner reads).
+        const ticket = newStatus === 'paid'
+          ? buildTicketFromPurchase(purchase, txId, parsed, now, purchase.startsNextMonday)
+          : null;
+
+        // Format helpers for receipt-matching fields
+        const pad = n => String(n).padStart(2, '0');
+        const formatDateTime = d => {
+          if (!d) return null;
+          return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ` +
+                 `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        };
+        const formatDateOnly = d => {
+          if (!d) return null;
+          return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
+        };
+
+        // receipt: stored exactly as it appears on the printed/downloaded receipt
+        // so opening a purchase document in MongoDB shows a human-readable record.
+        const receipt = newStatus === 'paid' ? {
+          cardNo:     purchase.cardNo   || null,
+          approval:   parsed.pf_payment_id || txId,
+          date:       formatDateTime(now),          // dd/mm/yyyy hh:mm:ss
+          aliasNo:    purchase.aliasNo,
+          price:      `${Number(purchase.amount)} ZAR`,
+          ticketId:   txId,
+          type:       purchase.trip.ticketType,     // e.g. "6 Days"
+          startDate:  ticket ? formatDateOnly(ticket.startDate) : null, // dd/mm/yyyy
+          validDays:  ticket ? ticket.validDays : null,   // e.g. "MTWTFSs"
+          slotNo:     1,
+          from:       purchase.trip.from,
+          to:         purchase.trip.to,
+        } : null;
+
         await purchasesCollection.updateOne(
           { txId },
           {
             $set: {
-              status: newStatus,
-              failReason: newStatus === 'failed' ? (parsed.payment_status || 'Payment failed') : null,
-              paidAt: newStatus === 'paid' ? now : null,
+              status:           newStatus,
+              failReason:       newStatus === 'failed' ? (parsed.payment_status || 'Payment failed') : null,
+              paidAt:           newStatus === 'paid' ? now : null,
               payfastPaymentId: parsed.pf_payment_id || null,
-              payfast: parsed,
+              payfast:          parsed,
+              ticket,   // full ticket object (startDate, expiryDate as Date objects, etc.)
+              receipt,  // receipt fields exactly as printed — human-readable in MongoDB
               updatedAt: now
             }
           }
         );
 
         // ---------------------------------------------------------------
-        // After confirmed payment, update the card record so the ticket
-        // (From/To/validity) is loaded onto it — exactly like the printed receipt.
+        // Do not update card documents with active-ticket metadata.
+        // Validation and ticket state are now derived from purchases only.
         // ---------------------------------------------------------------
-        if (newStatus === 'paid' && purchase.cardRef) {
-          try {
-            const ticket = buildTicketFromPurchase(purchase, txId, parsed, now);
-
-            await cardsCollection.updateOne(
-              { _id: purchase.cardRef },
-              {
-                // activeTicket is what the driver's scanner reads — From, To,
-                // validity window — mirroring the printed receipt.
-                $set:  { activeTicket: ticket, lastPaymentAt: now, lastPaymentTxId: txId },
-                $push: { ticketHistory: ticket }
-              }
-            );
-            console.log(`✓ Ticket loaded onto card for txId ${txId} (alias: ${purchase.aliasNo})`);
-          } catch (cardErr) {
-            // Log but don't fail — the payment is confirmed, the slip can still be shown.
-            // You can add a retry/reconciliation job later if needed.
-            console.error(`⚠ Payment confirmed but card update failed for txId ${txId}:`, cardErr.message);
-          }
+        if (newStatus === 'paid') {
+          console.log(`✓ Ticket recorded in purchase for txId ${txId} (alias: ${purchase.aliasNo})`);
         }
 
         return res.status(200).send('OK');
@@ -332,6 +404,24 @@ function createPaymentRouter({ cardsCollection, tripsCollection, purchasesCollec
   });
 
   // ---------------------------------------------------------------
+  // Debug helper: inspect purchases collection content and count
+  // ---------------------------------------------------------------
+  router.get('/debug/purchases', async (req, res) => {
+    try {
+      const count = await purchasesCollection.countDocuments();
+      const recent = await purchasesCollection.find().sort({ _id: -1 }).limit(10).toArray();
+      return res.status(200).json({
+        success: true,
+        count,
+        recent
+      });
+    } catch (err) {
+      console.error('Debug purchases error:', err);
+      return res.status(500).json({ success: false, message: 'Server error.' });
+    }
+  });
+
+  // ---------------------------------------------------------------
   // GET /api/payment/slip/:txId  — only returns a slip if actually paid
   // ---------------------------------------------------------------
   router.get('/slip/:txId', async (req, res) => {
@@ -354,13 +444,9 @@ function createPaymentRouter({ cardsCollection, tripsCollection, purchasesCollec
         paidAt: purchase.paidAt
       };
 
-      // Pull the matching ticket off the card if we have it, so the slip can
-      // also show Start Date / Expiry / Valid Days exactly like the printed receipt.
-      if (purchase.cardRef) {
-        const card = await cardsCollection.findOne({ _id: purchase.cardRef });
-        if (card && card.activeTicket && card.activeTicket.ticketId === txId) {
-          slip.ticket = card.activeTicket;
-        }
+      // Ticket detail now lives directly on the purchase record itself.
+      if (purchase.ticket) {
+        slip.ticket = purchase.ticket;
       }
 
       return res.status(200).json({ success: true, slip });

@@ -47,6 +47,11 @@ function aliasQuery(normalized) {
   };
 }
 
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, '../frontend')));
+
 // Connect to MongoDB
 MongoClient.connect(MONGODB_URL, { useUnifiedTopology: true })
   .then(async (client) => {
@@ -82,17 +87,12 @@ MongoClient.connect(MONGODB_URL, { useUnifiedTopology: true })
       aliasQuery,
       normalizeAliasNo
     }));
-    console.log('✓ Payment routes mounted at /api/payment (Ozow)');
+    console.log('✓ Payment routes mounted at /api/payment (PayFast)');
   })
   .catch(error => {
     console.error('✗ Failed to connect to MongoDB:', error.message);
     process.exit(1);
   });
-
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.static(path.join(__dirname, '../frontend')));
 
 // API Route 1: Validate Alias_No and check if it exists in database
 app.post('/api/cards/validate', async (req, res) => {
@@ -338,8 +338,8 @@ app.listen(PORT, () => {
   console.log(`  POST /api/cards/validate - Validate Alias number (returns card info if valid)`);
   console.log(`  GET  /api/cards/:aliasNo - Get card details by Alias number`);
   console.log(`  GET  /api/cards/:aliasNo/check - Quick check if Alias number is active`);
-  console.log(`  POST /api/payment/initiate - Start an Ozow payment for a trip`);
-  console.log(`  POST /api/payment/notify - Ozow notification webhook (server-to-server)`);
+  console.log(`  POST /api/payment/initiate - Start an PayFast payment for a trip`);
+  console.log(`  POST /api/payment/notify - PayFast notification webhook (server-to-server)`);
   console.log(`  GET  /api/payment/status/:txId - Poll payment status`);
   console.log(`  GET  /api/payment/slip/:txId - Get paid slip`);
   console.log(`  GET  /api/health - Health check`);

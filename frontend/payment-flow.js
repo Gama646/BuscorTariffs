@@ -14,7 +14,11 @@ async function startPayment(aliasNo, area, from, to, ticketType) {
     const data = await res.json();
 
     if (!data.success) {
-      showFailureMessage(data.message || 'Could not start payment.');
+      if (typeof window.showPopup === 'function') {
+        window.showPopup('Purchase blocked', data.message || 'Could not start payment.');
+      } else {
+        showFailureMessage(data.message || 'Could not start payment.');
+      }
       return;
     }
 
