@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Buscor – Payment</title>
+  <title>Buscor – Payment Success</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -21,17 +22,28 @@
       background: #fff;
       border-radius: 12px;
       box-shadow: 0 4px 24px rgba(0,0,0,0.10);
-      padding: 40px 36px;
-      max-width: 480px;
+      padding: 48px 40px;
+      max-width: 500px;
       width: 100%;
       text-align: center;
     }
 
-    .logo { font-size: 1.6rem; font-weight: 700; color: #1a3c6e; margin-bottom: 28px; }
+    .logo { 
+      font-size: 2rem; 
+      font-weight: 700; 
+      color: #1a3c6e; 
+      margin-bottom: 8px; 
+    }
+    
+    .subtitle {
+      color: #718096;
+      font-size: 0.9rem;
+      margin-bottom: 32px;
+    }
 
-    /* Spinner */
     .spinner {
-      width: 52px; height: 52px;
+      width: 52px; 
+      height: 52px;
       border: 5px solid #e2e8f0;
       border-top-color: #1a3c6e;
       border-radius: 50%;
@@ -40,194 +52,572 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .status-msg { color: #4a5568; font-size: 1rem; margin-bottom: 8px; }
-    .sub-msg    { color: #a0aec0; font-size: 0.875rem; }
+    .status-msg { 
+      color: #4a5568; 
+      font-size: 1rem; 
+      margin-bottom: 8px; 
+    }
+    .sub-msg { 
+      color: #a0aec0; 
+      font-size: 0.875rem; 
+    }
 
-    /* Success box */
-    .success-box { display: none; }
-    .icon-success { font-size: 3rem; margin-bottom: 12px; }
-    .success-box h2 { color: #276749; font-size: 1.4rem; margin-bottom: 16px; }
+    .success-icon {
+      font-size: 4rem;
+      margin-bottom: 16px;
+    }
 
-    .slip {
+    .success-title {
+      color: #276749;
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .success-sub {
+      color: #4a5568;
+      font-size: 1rem;
+      margin-bottom: 24px;
+    }
+
+    .receipt-info {
       background: #f7fafc;
-      border: 1px solid #e2e8f0;
       border-radius: 8px;
       padding: 16px 20px;
       text-align: left;
-      margin-bottom: 20px;
+      margin-bottom: 24px;
+      border: 1px solid #e2e8f0;
     }
-    .slip-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 0.9rem; color: #2d3748; }
-    .slip-row span:first-child { color: #718096; }
-    .slip-row.total span:last-child { font-weight: 700; color: #276749; font-size: 1rem; }
 
-    /* Failure box */
-    .failure-box { display: none; }
-    .icon-failure { font-size: 3rem; margin-bottom: 12px; }
-    .failure-box h2 { color: #9b2335; font-size: 1.4rem; margin-bottom: 12px; }
-    .failure-box p  { color: #4a5568; font-size: 0.9rem; margin-bottom: 20px; }
+    .receipt-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      font-size: 0.9rem;
+      color: #2d3748;
+    }
 
-    /* Buttons */
+    .receipt-row .label {
+      color: #718096;
+      font-weight: 500;
+    }
+
+    .receipt-row .value {
+      font-weight: 600;
+    }
+
+    .receipt-row.total .value {
+      color: #1a3c6e;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
     .btn {
       display: inline-block;
-      padding: 11px 28px;
+      padding: 14px 36px;
       border-radius: 8px;
       border: none;
       cursor: pointer;
-      font-size: 0.95rem;
+      font-size: 1rem;
       font-weight: 600;
       text-decoration: none;
-      margin: 6px;
+      transition: all 0.3s;
+      width: 100%;
     }
-    .btn-primary   { background: #1a3c6e; color: #fff; }
-    .btn-secondary { background: #e2e8f0; color: #2d3748; }
-    .btn-primary:hover   { background: #14306e; }
-    .btn-secondary:hover { background: #cbd5e0; }
+
+    .btn-primary {
+      background: #1a3c6e;
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: #14306e;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(26, 60, 110, 0.3);
+    }
+
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #2d3748;
+      margin-top: 12px;
+    }
+
+    .btn-secondary:hover {
+      background: #cbd5e0;
+      transform: translateY(-2px);
+    }
+
+    .btn-success {
+      background: #276749;
+      color: #fff;
+    }
+
+    .btn-success:hover {
+      background: #1e5438;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(39, 103, 73, 0.3);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .button-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .failure-box { 
+      display: none; 
+      text-align: center; 
+    }
+
+    .failure-icon {
+      font-size: 4rem;
+      margin-bottom: 16px;
+    }
+
+    .failure-title {
+      color: #9b2335;
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .failure-msg {
+      color: #4a5568;
+      font-size: 1rem;
+      margin-bottom: 24px;
+    }
+
+    /* Hidden receipt for PDF - EXACT match to receiptNo.png */
+    .hidden-receipt {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      width: 210mm;
+      background: #fff;
+      padding: 20px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 2;
+      box-sizing: border-box;
+    }
+
+    /* Loading state for button */
+    .btn-loading {
+      position: relative;
+      color: transparent !important;
+    }
+
+    .btn-loading::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      top: 50%;
+      left: 50%;
+      margin: -10px 0 0 -10px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @media (max-width: 480px) {
+      .card { padding: 32px 20px; }
+      .receipt-row { font-size: 0.8rem; }
+    }
   </style>
 </head>
 <body>
+
 <div class="card">
   <div class="logo">🚌 Buscor</div>
+  <div class="subtitle">Ticketing System</div>
 
-  <!-- Pending / polling state -->
-  <div id="pending">
+  <!-- Loading State -->
+  <div id="loadingState">
     <div class="spinner"></div>
     <p class="status-msg">Confirming your payment…</p>
     <p class="sub-msg">Please wait, this usually takes a few seconds.</p>
   </div>
 
-  <!-- Success state -->
-  <div class="success-box" id="success">
-    <div class="icon-success">✅</div>
-    <h2>Payment Successful!</h2>
-    <div class="slip" id="slip-details"></div>
-    <p class="sub-msg" style="margin-bottom:20px;">Your receipt has downloaded automatically.</p>
-    <button class="btn btn-primary"    id="btn-download">Download Receipt Again</button>
-    <a     class="btn btn-secondary"   href="/">Back to Home</a>
+  <!-- Success State -->
+  <div id="successState" style="display: none;">
+    <div class="success-icon">✅</div>
+    <div class="success-title">Payment Successful!</div>
+    <div class="success-sub">Your ticket has been loaded onto your card.</div>
+
+    <div class="receipt-info" id="receiptInfo">
+      <!-- Dynamically populated -->
+    </div>
+
+    <div class="button-group">
+      <button class="btn btn-success" id="downloadBtn">
+        📥 Download Receipt (PDF)
+      </button>
+      <a class="btn btn-secondary" href="/">🏠 Back to Home</a>
+    </div>
   </div>
 
-  <!-- Failure state -->
-  <div class="failure-box" id="failure">
-    <div class="icon-failure">❌</div>
-    <h2>Payment Not Successful</h2>
-    <p id="failure-msg">No trips were loaded onto your card.</p>
+  <!-- Failure State -->
+  <div id="failureState" style="display: none;">
+    <div class="failure-icon">❌</div>
+    <div class="failure-title">Payment Not Successful</div>
+    <div class="failure-msg" id="failureMsg">
+      No trips were loaded onto your card. Please try again.
+    </div>
     <a class="btn btn-primary" href="/">Try Again</a>
   </div>
 </div>
 
-<script>
-  // ── Helpers ──────────────────────────────────────────────────────
-  const params = new URLSearchParams(window.location.search);
-  const txId   = params.get('txId');
+<!-- Hidden receipt for PDF generation - EXACT match to receiptNo.png format -->
+<div id="receiptContainer" class="hidden-receipt">
+  <div style="width: 100%; min-height: 297mm; padding: 20px; font-family: 'Courier New', monospace; font-size: 12px; line-height: 2; background: #fff; box-sizing: border-box;">
+    
+    <!-- TICKET RECEIPT Header -->
+    <div style="text-align: center; margin-bottom: 16px; border-bottom: 2px solid #000; padding-bottom: 8px;">
+      <div style="font-size: 14px; font-weight: 700; letter-spacing: 2px;">TICKET RECEIPT</div>
+    </div>
 
-  function show(id) {
-    ['pending','success','failure'].forEach(x => {
-      document.getElementById(x).style.display = (x === id ? '' : 'none');
+    <!-- Card No -->
+    <div style="display: flex; margin-bottom: 0px;">
+      <span style="width: 100px; font-weight: 600;">Card No</span>
+      <span style="margin: 0 4px;">:</span>
+      <span style="flex: 1;" id="r-cardNo"></span>
+    </div>
+
+    <!-- Approval -->
+    <div style="display: flex; margin-bottom: 0px;">
+      <span style="width: 100px; font-weight: 600;">Approval</span>
+      <span style="margin: 0 4px;">:</span>
+      <span style="flex: 1;" id="r-approval"></span>
+    </div>
+
+    <!-- Date -->
+    <div style="display: flex; margin-bottom: 0px;">
+      <span style="width: 100px; font-weight: 600;">Date</span>
+      <span style="margin: 0 4px;">:</span>
+      <span style="flex: 1;" id="r-date"></span>
+    </div>
+
+    <!-- Alias No -->
+    <div style="display: flex; margin-bottom: 0px;">
+      <span style="width: 100px; font-weight: 600;">Alias No</span>
+      <span style="margin: 0 4px;">:</span>
+      <span style="flex: 1;" id="r-aliasNo"></span>
+    </div>
+
+    <!-- Price -->
+    <div style="display: flex; margin-bottom: 12px;">
+      <span style="width: 100px; font-weight: 600;">Price</span>
+      <span style="margin: 0 4px;">:</span>
+      <span style="flex: 1;" id="r-price"></span>
+    </div>
+
+    <!-- Blank line after Price -->
+    <div style="height: 4px;"></div>
+
+    <!-- Ticket Id -->
+    <div style="display: flex; margin-bottom: 0px;">
+      <span style="width: 100px; font-weight: 600;">Ticket Id</span>
+      <span style="margin: 0 4px;">:</span>
+      <span style="flex: 1;" id="r-ticketId"></span>
+    </div>
+
+    <!-- Type -->
+    <div style="display: flex; margin-bottom: 0px;">
+      <span style="width: 100px; font-weight: 600;">Type</span>
+      <span style="margin: 0 4px;">:</span>
+      <span style="flex: 1;" id="r-type"></span>
+    </div>
+
+    <!-- Start Date -->
+    <div style="display: flex; margin-bottom: 0px;">
+      <span style="width: 100px; font-weight: 600;">Start Date</span>
+      <span style="margin: 0 4px;">:</span>
+      <span style="flex: 1;" id="r-startDate"></span>
+    </div>
+
+    <!-- Valid Days -->
+    <div style="display: flex; margin-bottom: 0px;">
+      <span style="width: 100px; font-weight: 600;">Valid Days</span>
+      <span style="margin: 0 4px;">:</span>
+      <span style="flex: 1;" id="r-validDays"></span>
+    </div>
+
+    <!-- Slot # -->
+    <div style="display: flex; margin-bottom: 0px;">
+      <span style="width: 100px; font-weight: 600;">Slot #</span>
+      <span style="margin: 0 4px;">:</span>
+      <span style="flex: 1;">1</span>
+    </div>
+
+    <!-- From -->
+    <div style="display: flex; margin-bottom: 0px;">
+      <span style="width: 100px; font-weight: 600;">From</span>
+      <span style="margin: 0 4px;">:</span>
+      <span style="flex: 1;" id="r-from"></span>
+    </div>
+
+    <!-- To -->
+    <div style="display: flex; margin-bottom: 0px;">
+      <span style="width: 100px; font-weight: 600;">To</span>
+      <span style="margin: 0 4px;">:</span>
+      <span style="flex: 1;" id="r-to"></span>
+    </div>
+
+    <!-- Suburbs(138) -->
+    <div style="margin-top: 4px; font-size: 12px; color: #000;">
+      Suburbs(138)
+    </div>
+
+    <!-- Footer -->
+    <div style="margin-top: 20px; padding-top: 10px; border-top: 1px solid #000; font-size: 10px; text-align: center;">
+      <p style="margin: 0; font-weight: 700;">KEEP THIS RECEIPT FOR YOUR RECORDS</p>
+      <p style="margin: 4px 0 0 0;">www.buscor.co.za | 013 754 6246</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const txId = params.get('txId');
+  let receiptData = null;
+
+  function showState(state) {
+    ['loadingState', 'successState', 'failureState'].forEach(id => {
+      document.getElementById(id).style.display = (id === state) ? 'block' : 'none';
     });
-    if (id !== 'pending') {
-      document.getElementById('pending').style.display = 'none';
+  }
+
+  function formatDateTime(d) {
+    if (!d) return '';
+    const date = new Date(d);
+    if (isNaN(date.getTime())) return '';
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} ` +
+           `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+  }
+
+  function formatDateOnly(d) {
+    if (!d) return '';
+    const date = new Date(d);
+    if (isNaN(date.getTime())) return '';
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${pad(date.getFullYear())}`;
+  }
+
+  // Function to determine Valid Days based on ticket duration
+  function getValidDays(durationDays) {
+    // durationDays: 5, 6, 7, 8, etc.
+    // 5 days: MTWTFs (Monday to Friday, no weekend)
+    // 6 days: MTWTFSs (Monday to Saturday, Sunday excluded - lowercase s)
+    // 7+ days: MTWTFSS (Monday to Sunday, both days included - capital S)
+    
+    if (durationDays <= 5) {
+      return 'MTWTFs';  // 5 days - Monday to Friday
+    } else if (durationDays === 6) {
+      return 'MTWTFSs'; // 6 days - Monday to Saturday, Sunday excluded (lowercase s)
+    } else {
+      return 'MTWTFSS'; // 7+ days - Monday to Sunday (capital S)
     }
   }
 
-  function showFailure(msg) {
-    document.getElementById('failure-msg').textContent =
-      (msg || 'Payment was not successful.') + ' No trips were loaded onto your card.';
-    document.getElementById('failure').style.display = 'block';
-    document.getElementById('pending').style.display = 'none';
+  // Parse duration from ticket type (e.g., "5 Days", "6 Days", "7 Days", "30 Days")
+  function parseDurationDays(ticketType) {
+    const match = String(ticketType || '').match(/(\d+)/);
+    return match ? parseInt(match[1], 10) : 5; // Default to 5 if not found
   }
 
-  function renderSlip(slip) {
-    const t = slip.ticket; // may be undefined if card wasn't linked
-    const paidAt = new Date(slip.paidAt).toLocaleString('en-ZA');
-    const startDate  = t ? new Date(t.startDate).toLocaleDateString('en-ZA')  : '—';
-    const expiryDate = t ? new Date(t.expiryDate).toLocaleDateString('en-ZA') : '—';
+  function displayReceipt(slip) {
+    receiptData = slip;
+    const t = slip.ticket;
+    const paidAt = formatDateTime(slip.paidAt);
+    const startDate = t ? formatDateOnly(t.startDate) : '';
+    const priceLabel = `R ${Number(slip.amount).toFixed(2)}`;
+    const approvalCode = (t && t.approvalCode) ? t.approvalCode : '';
+    const cardNo = slip.cardNo || '';
+    const aliasNo = slip.aliasNo || '';
 
-    document.getElementById('slip-details').innerHTML = `
-      <div class="slip-row"><span>Receipt Ref</span>   <span>${slip.txId}</span></div>
-      ${slip.cardNo ? `<div class="slip-row"><span>Card No</span>      <span>${slip.cardNo}</span></div>` : ''}
-      <div class="slip-row"><span>Alias No</span>      <span>${slip.aliasNo}</span></div>
-      <div class="slip-row"><span>Type</span>          <span>${slip.trip.ticketType}</span></div>
-      <div class="slip-row"><span>Start Date</span>    <span>${startDate}</span></div>
-      <div class="slip-row"><span>Valid Until</span>   <span>${expiryDate}</span></div>
-      <div class="slip-row"><span>Valid Days</span>    <span>${t ? t.validDays : 'MTWTFSs'}</span></div>
-      <div class="slip-row"><span>From</span>          <span>${slip.trip.from}</span></div>
-      <div class="slip-row"><span>To</span>             <span>${slip.trip.to}</span></div>
-      <div class="slip-row"><span>Paid at</span>       <span>${paidAt}</span></div>
-      <div class="slip-row total"><span>Price</span>   <span>R ${Number(slip.amount).toFixed(2)}</span></div>
+    // Get the correct Valid Days based on ticket duration
+    const durationDays = parseDurationDays(slip.trip.ticketType);
+    const validDays = getValidDays(durationDays);
+
+    // Display receipt info on the card - EXACT fields only
+    document.getElementById('receiptInfo').innerHTML = `
+      <div class="receipt-row">
+        <span class="label">Card No</span>
+        <span class="value">${cardNo}</span>
+      </div>
+      <div class="receipt-row">
+        <span class="label">Approval</span>
+        <span class="value">${approvalCode}</span>
+      </div>
+      <div class="receipt-row">
+        <span class="label">Date</span>
+        <span class="value">${paidAt}</span>
+      </div>
+      <div class="receipt-row">
+        <span class="label">Alias No</span>
+        <span class="value">${aliasNo}</span>
+      </div>
+      <div class="receipt-row total">
+        <span class="label">Price</span>
+        <span class="value">${priceLabel}</span>
+      </div>
+      <div style="border-top: 1px dashed #ccc; margin: 8px 0;"></div>
+      <div class="receipt-row">
+        <span class="label">Ticket Id</span>
+        <span class="value">${slip.txId}</span>
+      </div>
+      <div class="receipt-row">
+        <span class="label">Type</span>
+        <span class="value">${slip.trip.ticketType}</span>
+      </div>
+      <div class="receipt-row">
+        <span class="label">Start Date</span>
+        <span class="value">${startDate}</span>
+      </div>
+      <div class="receipt-row">
+        <span class="label">Valid Days</span>
+        <span class="value">${validDays}</span>
+      </div>
+      <div class="receipt-row">
+        <span class="label">Slot #</span>
+        <span class="value">1</span>
+      </div>
+      <div class="receipt-row">
+        <span class="label">From</span>
+        <span class="value">${slip.trip.from}</span>
+      </div>
+      <div class="receipt-row">
+        <span class="label">To</span>
+        <span class="value">${slip.trip.to}</span>
+      </div>
+      <div class="receipt-row" style="margin-top: 4px;">
+        <span class="label">Suburbs(138)</span>
+        <span class="value"></span>
+      </div>
     `;
 
-    document.getElementById('btn-download').onclick = () => downloadReceipt(slip);
-    downloadReceipt(slip); // auto-download once on load
+    // Update hidden receipt for PDF - EXACT format match
+    document.getElementById('r-cardNo').textContent = cardNo;
+    document.getElementById('r-approval').textContent = approvalCode;
+    document.getElementById('r-date').textContent = paidAt;
+    document.getElementById('r-aliasNo').textContent = aliasNo;
+    document.getElementById('r-price').textContent = priceLabel;
+    document.getElementById('r-ticketId').textContent = slip.txId;
+    document.getElementById('r-type').textContent = slip.trip.ticketType;
+    document.getElementById('r-startDate').textContent = startDate;
+    document.getElementById('r-validDays').textContent = validDays;
+    document.getElementById('r-from').textContent = slip.trip.from;
+    document.getElementById('r-to').textContent = slip.trip.to;
+
+    showState('successState');
   }
 
-  function downloadReceipt(slip) {
-    const t = slip.ticket;
-    const paidAt = new Date(slip.paidAt).toLocaleString('en-ZA');
-    const startDate  = t ? new Date(t.startDate).toLocaleDateString('en-ZA')  : '-';
-    const expiryDate = t ? new Date(t.expiryDate).toLocaleDateString('en-ZA') : '-';
-
-    const content = [
-      'BUSCOR (PTY) LTD - TICKET RECEIPT',
-      '------------------------------------',
-      `Receipt Ref : ${slip.txId}`,
-      slip.cardNo ? `Card No     : ${slip.cardNo}` : null,
-      `Alias No    : ${slip.aliasNo}`,
-      `Type        : ${slip.trip.ticketType}`,
-      `Start Date  : ${startDate}`,
-      `Valid Until : ${expiryDate}`,
-      `Valid Days  : ${t ? t.validDays : 'MTWTFSs'}`,
-      `From        : ${slip.trip.from}`,
-      `To          : ${slip.trip.to}`,
-      `Price       : R ${Number(slip.amount).toFixed(2)}`,
-      `Paid at     : ${paidAt}`,
-      `Status      : PAID`
-    ].filter(Boolean).join('\n');
-
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = `Buscor-Receipt-${slip.txId}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  function showFailure(msg) {
+    document.getElementById('failureMsg').textContent = msg || 'Payment was not successful. No trips were loaded onto your card.';
+    showState('failureState');
   }
 
-  // ── Polling ───────────────────────────────────────────────────────
+  function downloadPDF() {
+    if (!receiptData) {
+      alert('Receipt data not available. Please refresh the page.');
+      return;
+    }
+
+    const btn = document.getElementById('downloadBtn');
+    btn.disabled = true;
+    btn.classList.add('btn-loading');
+    btn.textContent = 'Generating PDF...';
+
+    const element = document.getElementById('receiptContainer');
+
+    element.style.position = 'absolute';
+    element.style.left = '-9999px';
+    element.style.top = '0';
+    element.style.display = 'block';
+
+    void element.offsetHeight;
+
+    const opt = {
+      margin: 0,
+      filename: `Buscor-Receipt-${receiptData.txId}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { 
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        width: 794,
+        height: 1123
+      },
+      jsPDF: { 
+        unit: 'mm', 
+        format: 'a4', 
+        orientation: 'portrait' 
+      }
+    };
+
+    html2pdf()
+      .set(opt)
+      .from(element)
+      .save()
+      .then(() => {
+        btn.disabled = false;
+        btn.classList.remove('btn-loading');
+        btn.textContent = '📥 Download Receipt (PDF)';
+        element.style.display = 'none';
+      })
+      .catch((err) => {
+        console.error('PDF generation failed:', err);
+        btn.disabled = false;
+        btn.classList.remove('btn-loading');
+        btn.textContent = '📥 Download Receipt (PDF)';
+        element.style.display = 'none';
+        alert('Failed to generate PDF. Please try again or contact support.');
+      });
+  }
+
   async function checkStatus(attempt = 1) {
-    if (!txId) { showFailure('No transaction reference found in URL.'); return; }
+    if (!txId) {
+      showFailure('No transaction reference found in URL.');
+      return;
+    }
 
     try {
-      const res  = await fetch(`/api/payment/status/${txId}`);
+      const res = await fetch(`/api/payment/status/${txId}`);
       const data = await res.json();
 
-      if (!data.success) { showFailure('Could not find this transaction.'); return; }
+      if (!data.success) {
+        showFailure('Could not find this transaction.');
+        return;
+      }
 
       if (data.status === 'paid') {
-        // Fetch the full slip to render
-        const slipRes  = await fetch(`/api/payment/slip/${txId}`);
+        const slipRes = await fetch(`/api/payment/slip/${txId}`);
         const slipData = await slipRes.json();
+        
         if (slipData.success) {
-          renderSlip(slipData.slip);
-          document.getElementById('success').style.display = 'block';
-          document.getElementById('pending').style.display = 'none';
+          displayReceipt(slipData.slip);
         } else {
-          showFailure(`Payment succeeded but slip could not be loaded. Reference: ${txId}`);
+          showFailure(`Payment succeeded but receipt could not be loaded. Reference: ${txId}`);
         }
-
       } else if (data.status === 'failed') {
         showFailure('Payment was not successful' + (data.failReason ? ` (${data.failReason})` : '') + '.');
-
       } else if (attempt < 20) {
-        // Still pending — keep polling every 1.5 s (up to 30 s total)
         setTimeout(() => checkStatus(attempt + 1), 1500);
-
       } else {
         showFailure(`Payment is taking longer than expected. Contact support with reference: ${txId}`);
       }
-
     } catch (err) {
-      console.error(err);
+      console.error('Status check error:', err);
       if (attempt < 20) {
         setTimeout(() => checkStatus(attempt + 1), 2000);
       } else {
@@ -236,7 +626,7 @@
     }
   }
 
-  // Start
+  document.getElementById('downloadBtn').addEventListener('click', downloadPDF);
   checkStatus();
 </script>
 </body>

@@ -36,13 +36,6 @@ const trips = [
   },
   {
     "area": "Nelspruit Area",
-    "from": "Nelspruit",
-    "to": "SUBURBS",
-    "ticketType": "Single / Cash",
-    "price": "R29.00"
-  },
-  {
-    "area": "Nelspruit Area",
     "from": "Lekazi",
     "to": "NELSPRUIT",
     "ticketType": "5 Day",
@@ -3608,7 +3601,7 @@ const trips = [
     "area": "Nelspruit Area",
     "from": "Lekazi",
     "to": "Bateleur",
-    "ticketType": "Single / Cash",
+    "ticketType": "",
     "price": "R58.00"
   },
   {

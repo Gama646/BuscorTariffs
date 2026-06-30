@@ -36,13 +36,6 @@
   },
   {
     "area": "Nelspruit Area",
-    "from": "Nelspruit",
-    "to": "SUBURBS",
-    "ticketType": "Single / Cash",
-    "price": "R29.00"
-  },
-  {
-    "area": "Nelspruit Area",
     "from": "Lekazi",
     "to": "NELSPRUIT",
     "ticketType": "5 Day",
@@ -78,13 +71,6 @@
   },
   {
     "area": "Nelspruit Area",
-    "from": "Lekazi",
-    "to": "NELSPRUIT",
-    "ticketType": "Single / Cash",
-    "price": "R29.00"
-  },
-  {
-    "area": "Nelspruit Area",
     "from": "Kabokweni",
     "to": "NELSPRUIT",
     "ticketType": "5 Day",
@@ -117,13 +103,6 @@
     "to": "NELSPRUIT",
     "ticketType": "26 Day",
     "price": "R931.00"
-  },
-  {
-    "area": "Nelspruit Area",
-    "from": "Kabokweni",
-    "to": "NELSPRUIT",
-    "ticketType": "Single / Cash",
-    "price": "R29.00"
   },
   {
     "area": "Nelspruit Area",

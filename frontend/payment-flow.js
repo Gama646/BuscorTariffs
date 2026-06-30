@@ -18,8 +18,23 @@ async function startPayment(aliasNo, area, from, to, ticketType) {
       return;
     }
 
-    // Ozow's hosted page is a simple GET redirect — no hidden form needed.
-    window.location.href = data.paymentUrl;
+    // Build a hidden form and auto-submit it to PayFast.
+    // This is the standard PayFast redirect pattern — no card details
+    // ever touch your own server.
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = data.payfastHost;
+
+    for (const [key, value] of Object.entries(data.fields)) {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = key;
+      input.value = value;
+      form.appendChild(input);
+    }
+
+    document.body.appendChild(form);
+    form.submit();
 
   } catch (err) {
     console.error(err);

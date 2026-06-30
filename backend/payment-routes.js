@@ -5,17 +5,18 @@
 //   app.use('/api/payment', createPaymentRouter({ cardsCollection, tripsCollection, purchasesCollection, aliasQuery, normalizeAliasNo }));
 //
 // Requires these env vars (see .env.example):
-//   OZOW_SITE_CODE, OZOW_PRIVATE_KEY, OZOW_API_KEY,
-//   OZOW_MODE ('test' or 'live'), APP_BASE_URL, PUBLIC_BASE_URL
+//   PAYFAST_MERCHANT_ID, PAYFAST_MERCHANT_KEY, PAYFAST_PASSPHRASE (optional),
+//   PAYFAST_MODE ('sandbox' or 'live'), APP_BASE_URL, PUBLIC_BASE_URL
 
 const express = require('express');
 const { randomUUID } = require('crypto');
+const querystring = require('querystring');
 const {
-  buildPaymentRequest,
-  buildPaymentUrl,
-  verifyNotificationHash,
-  getTransactionByReference
-} = require('./ozow');
+  getPayfastHost,
+  buildPaymentFields,
+  verifyItnSignatureRaw,
+  validateWithPayfast
+} = require('./payfast');
 
 // Parses a ticketType string like "6 Days" / "5 Days" / "30 Days" into a
 // number of days. Defaults to 5 (the minimum) if it can't be parsed.
@@ -59,7 +60,7 @@ function buildValidDaysCode(durationDays) {
 // Builds the "active ticket" object stored on the card — this mirrors the
 // fields printed on the physical receipt (Type, Start Date, Valid Days,
 // From, To, Price) so the driver's scanner can display the same info.
-function buildTicketFromPurchase(purchase, txId, ozowFields, paidAt) {
+function buildTicketFromPurchase(purchase, txId, payfastFields, paidAt) {
   const durationDays = parseTicketDurationDays(purchase.trip.ticketType);
   const startDate = getTicketStartDate(paidAt); // anchored to a Monday — see rule above
   const expiryDate = new Date(startDate);
@@ -76,7 +77,7 @@ function buildTicketFromPurchase(purchase, txId, ozowFields, paidAt) {
     from: purchase.trip.from,
     to: purchase.trip.to,
     price: purchase.amount,
-    approvalCode: ozowFields.TransactionId || null,
+    approvalCode: payfastFields.pf_payment_id || null,
     paidAt
   };
 }
@@ -84,21 +85,20 @@ function buildTicketFromPurchase(purchase, txId, ozowFields, paidAt) {
 function createPaymentRouter({ cardsCollection, tripsCollection, purchasesCollection, aliasQuery, normalizeAliasNo }) {
   const router = express.Router();
 
-  const SITE_CODE = process.env.OZOW_SITE_CODE;
-  const PRIVATE_KEY = process.env.OZOW_PRIVATE_KEY;
-  const API_KEY = process.env.OZOW_API_KEY;
-  const IS_TEST = (process.env.OZOW_MODE || 'test') !== 'live';
+  const MERCHANT_ID = process.env.PAYFAST_MERCHANT_ID;
+  const MERCHANT_KEY = process.env.PAYFAST_MERCHANT_KEY;
+  const PASSPHRASE = process.env.PAYFAST_PASSPHRASE || '';
 
-  // PUBLIC_BASE_URL is the address Ozow can reach (e.g. your ngrok URL).
+  // PUBLIC_BASE_URL is the address PayFast can reach (e.g. your ngrok URL).
   // APP_BASE_URL is where the user's browser is redirected back to.
   const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL;
   const APP_BASE_URL = process.env.APP_BASE_URL || 'http://localhost:5000';
 
-  if (!SITE_CODE || !PRIVATE_KEY || !API_KEY) {
-    console.warn('⚠ OZOW_SITE_CODE / OZOW_PRIVATE_KEY / OZOW_API_KEY not set — payment routes will fail.');
+  if (!MERCHANT_ID || !MERCHANT_KEY) {
+    console.warn('⚠ PAYFAST_MERCHANT_ID / PAYFAST_MERCHANT_KEY not set — payment routes will fail.');
   }
   if (!PUBLIC_BASE_URL) {
-    console.warn('⚠ PUBLIC_BASE_URL not set — Ozow will not be able to reach your notify webhook. Use ngrok locally.');
+    console.warn('⚠ PUBLIC_BASE_URL not set — PayFast will not be able to reach your ITN webhook. Use ngrok locally.');
   }
 
   // ---------------------------------------------------------------
@@ -137,7 +137,12 @@ function createPaymentRouter({ cardsCollection, tripsCollection, purchasesCollec
         return res.status(400).json({ success: false, message: 'Tickets are only available in 5 days or more.' });
       }
 
-      const amount = trip.amount || trip.price;
+      // Price may be stored as a string (e.g. "R144.00" or "1,440") rather
+      // than a clean number — strip anything that isn't a digit or dot.
+      const rawAmount = trip.amount ?? trip.price;
+      const amount = typeof rawAmount === 'number'
+        ? rawAmount
+        : parseFloat(String(rawAmount || '').replace(/[^0-9.]/g, ''));
       if (!amount || amount <= 0) {
         return res.status(400).json({ success: false, message: 'Invalid fare amount for this trip.' });
       }
@@ -158,24 +163,27 @@ function createPaymentRouter({ cardsCollection, tripsCollection, purchasesCollec
 
       await purchasesCollection.insertOne(purchase);
 
-      const fields = buildPaymentRequest({
-        siteCode: SITE_CODE,
-        amount,
+      const fields = buildPaymentFields({
         txId,
-        bankReference: `Buscor-${normalized}`.slice(0, 20), // Ozow limits this field's length
+        amount,
+        itemName: `Buscor Ticket: ${trip.from} to ${trip.to}`,
+        itemDescription: `Ticket type: ${trip.ticketType}`,
+        returnUrl: `${APP_BASE_URL}/payment-success.html?txId=${txId}`,
         cancelUrl: `${APP_BASE_URL}/payment-cancelled.html?txId=${txId}`,
-        errorUrl: `${APP_BASE_URL}/payment-cancelled.html?txId=${txId}&error=1`,
-        successUrl: `${APP_BASE_URL}/payment-success.html?txId=${txId}`,
         notifyUrl: `${PUBLIC_BASE_URL}/api/payment/notify`,
-        isTest: IS_TEST,
-        privateKey: PRIVATE_KEY
+        merchantId: MERCHANT_ID,
+        merchantKey: MERCHANT_KEY,
+        passphrase: PASSPHRASE
       });
 
-      const paymentUrl = buildPaymentUrl(fields);
+      console.log(`→ Initiating payment ${txId}: notify_url=${PUBLIC_BASE_URL}/api/payment/notify`);
+      console.log('→ Fields being sent to PayFast:', JSON.stringify(fields, null, 2));
+      console.log('→ PayFast host:', getPayfastHost());
 
       return res.status(200).json({
         success: true,
-        paymentUrl,
+        payfastHost: getPayfastHost(),
+        fields,
         txId
       });
     } catch (err) {
@@ -185,68 +193,71 @@ function createPaymentRouter({ cardsCollection, tripsCollection, purchasesCollec
   });
 
   // ---------------------------------------------------------------
-  // POST /api/payment/notify  (Ozow notification webhook — server to server)
+  // POST /api/payment/notify  (PayFast ITN webhook — server to server)
   // This is the ONLY place a purchase is ever marked as "paid".
   // ---------------------------------------------------------------
   router.post(
     '/notify',
-    express.urlencoded({ extended: false }), // Ozow posts form-encoded fields
+    express.raw({ type: '*/*' }), // need the raw body to re-post it for validation
     async (req, res) => {
-      const body = req.body;
+      // Always respond 200 quickly once we've read the body — PayFast retries
+      // on non-200, but we do our checks first and just never throw past this point.
+      let rawBody = req.body.toString('utf8');
+      console.log('← /api/payment/notify hit. Raw body:', rawBody.slice(0, 300));
+      let parsed;
 
       try {
-        // 1. Verify the notification hash
-        const hashOk = verifyNotificationHash(body, PRIVATE_KEY);
-        if (!hashOk) {
-          console.warn('Notify hash mismatch for txId:', body.TransactionReference);
-          return res.status(400).send('Invalid hash');
+        parsed = querystring.parse(rawBody);
+      } catch (err) {
+        console.error('ITN parse error:', err);
+        return res.status(400).send('Bad request');
+      }
+
+      try {
+        // 1. Verify signature
+        const sigOk = verifyItnSignatureRaw(rawBody, PASSPHRASE);
+        if (!sigOk) {
+          console.warn('ITN signature mismatch for txId:', parsed.m_payment_id);
+          return res.status(400).send('Invalid signature');
         }
 
-        // 2. Confirm SiteCode matches ours
-        if (body.SiteCode !== SITE_CODE) {
-          console.warn('Notify SiteCode mismatch');
-          return res.status(400).send('Site code mismatch');
+        // 2. Confirm merchant_id matches ours
+        if (parsed.merchant_id !== MERCHANT_ID) {
+          console.warn('ITN merchant_id mismatch');
+          return res.status(400).send('Merchant mismatch');
         }
 
-        const txId = body.TransactionReference;
+        // 3. Re-validate the raw POST body with PayFast directly (server-to-server)
+        const validated = await validateWithPayfast(rawBody);
+        if (!validated) {
+          console.warn('ITN failed PayFast server validation for txId:', parsed.m_payment_id);
+          return res.status(400).send('Validation failed');
+        }
+
+        const txId = parsed.m_payment_id;
         const purchase = await purchasesCollection.findOne({ txId });
         if (!purchase) {
-          console.warn('Notify for unknown txId:', txId);
+          console.warn('ITN for unknown txId:', txId);
           return res.status(404).send('Unknown transaction');
         }
 
-        // 3. Confirm the amount Ozow says was paid matches what we expect.
-        const paidAmount = parseFloat(body.Amount);
+        // 4. Confirm the amount PayFast says was paid matches what we expect.
+        const paidAmount = parseFloat(parsed.amount_gross);
         const expectedAmount = parseFloat(purchase.amount);
         if (Math.abs(paidAmount - expectedAmount) > 0.01) {
-          console.warn(`Notify amount mismatch for ${txId}: expected ${expectedAmount}, got ${paidAmount}`);
+          console.warn(`ITN amount mismatch for ${txId}: expected ${expectedAmount}, got ${paidAmount}`);
           await purchasesCollection.updateOne(
             { txId },
-            { $set: { status: 'failed', failReason: 'Amount mismatch', updatedAt: new Date(), ozow: body } }
+            { $set: { status: 'failed', failReason: 'Amount mismatch', updatedAt: new Date(), payfast: parsed } }
           );
           return res.status(200).send('OK'); // acknowledge receipt, but don't mark as paid
         }
 
-        // 4. Independently re-confirm status by querying Ozow directly,
-        // rather than trusting the notification body alone.
-        let verifiedStatus = body.Status;
-        try {
-          const lookup = await getTransactionByReference(SITE_CODE, txId, API_KEY);
-          if (Array.isArray(lookup) && lookup.length > 0 && lookup[0].status) {
-            verifiedStatus = lookup[0].status;
-          } else if (lookup && lookup.status) {
-            verifiedStatus = lookup.status;
-          }
-        } catch (lookupErr) {
-          console.warn(`Could not independently verify txId ${txId} via GetTransactionByReference:`, lookupErr.message);
-          // Fall back to the notification's own Status field — still hash-verified above.
-        }
-
-        // 5. Map Ozow status to our own status
+        // 5. Map PayFast payment_status to our own status
         let newStatus = 'pending';
-        if (verifiedStatus === 'Complete') newStatus = 'paid';
-        else if (verifiedStatus === 'Error' || verifiedStatus === 'Abandoned') newStatus = 'failed';
-        else if (verifiedStatus === 'Cancelled') newStatus = 'failed';
+        if (parsed.payment_status === 'COMPLETE') newStatus = 'paid';
+        else if (parsed.payment_status === 'FAILED') newStatus = 'failed';
+        else if (parsed.payment_status === 'CANCELLED') newStatus = 'failed';
 
         const now = new Date();
 
@@ -255,10 +266,10 @@ function createPaymentRouter({ cardsCollection, tripsCollection, purchasesCollec
           {
             $set: {
               status: newStatus,
-              failReason: newStatus === 'failed' ? verifiedStatus : null,
+              failReason: newStatus === 'failed' ? (parsed.payment_status || 'Payment failed') : null,
               paidAt: newStatus === 'paid' ? now : null,
-              ozowTransactionId: body.TransactionId || null,
-              ozow: body,
+              payfastPaymentId: parsed.pf_payment_id || null,
+              payfast: parsed,
               updatedAt: now
             }
           }
@@ -270,7 +281,7 @@ function createPaymentRouter({ cardsCollection, tripsCollection, purchasesCollec
         // ---------------------------------------------------------------
         if (newStatus === 'paid' && purchase.cardRef) {
           try {
-            const ticket = buildTicketFromPurchase(purchase, txId, body, now);
+            const ticket = buildTicketFromPurchase(purchase, txId, parsed, now);
 
             await cardsCollection.updateOne(
               { _id: purchase.cardRef },
@@ -291,8 +302,8 @@ function createPaymentRouter({ cardsCollection, tripsCollection, purchasesCollec
 
         return res.status(200).send('OK');
       } catch (err) {
-        console.error('Notify processing error:', err);
-        // Still 500 here is fine — Ozow will retry the notification.
+        console.error('ITN processing error:', err);
+        // Still 500 here is fine — PayFast will retry the ITN.
         return res.status(500).send('Server error');
       }
     }

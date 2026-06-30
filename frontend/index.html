@@ -141,13 +141,14 @@
           </p>
         </div>
 
-        <form class="payment-form" id="ticketForm">
-          <label>
-            Alias Number
-            <input id="cardNumber" type="text" placeholder="Enter your Alias number" maxlength="16" />
-          </label>
+        <div class="payment-form-wrapper">
+          <form class="payment-form" id="ticketForm">
+            <label>
+              Alias Number
+              <input id="cardNumber" type="text" placeholder="Enter your Alias number" maxlength="16" />
+            </label>
 
-          <button class="primary-btn full-width" type="button" id="validateCardButton">Validate Alias</button>
+            <button class="primary-btn full-width" type="button" id="validateCardButton">Validate Alias</button>
           <p id="cardStatus" class="card-status">Enter your Alias number, then validate before selecting a trip.</p>
 
           <label>
@@ -173,7 +174,38 @@
           <p id="priceDisplay" class="price-badge">Price will update here.</p>
 
           <button class="primary-btn full-width" type="button" id="payButton" disabled>Continue to payment</button>
-        </form>
+          </form>
+
+          <!-- 3D Card Display -->
+          <div class="card-display-section">
+            <p class="card-instruction">👉 Find the Alias number on your card (click to flip)</p>
+            <div class="card-flip-container" id="cardFlipContainer">
+              <div class="card-flip-inner">
+                <!-- Front of card -->
+                <div class="card-face card-front">
+                  <div class="card-logo">🚌</div>
+                  <div class="card-brand">Buscor</div>
+                  <div class="card-subtitle">Passenger Card</div>
+                  <div class="card-number-label">ALIAS No:</div>
+                  <div class="card-number-highlight">01204-60242-8</div>
+                  <div class="card-bottom-text">VALID PASSENGER CARD</div>
+                </div>
+
+                <!-- Back of card -->
+                <div class="card-face card-back">
+                  <div class="card-back-stripe"></div>
+                  <div class="card-back-content">
+                    <p class="card-back-label">CARDHOLDER</p>
+                    <p class="card-back-instruction">Present this side to the driver</p>
+                    <p class="card-back-details">www.buscor.co.za</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p class="card-hint">💡 Your 12-16 digit Alias number is on the front of your card</p>
+          </div>
+        </div>
+
       </section>
 
       <section class="summary-card" id="summaryPanel" aria-live="polite">
@@ -182,6 +214,11 @@
         <button class="ghost-btn" type="button" id="resetButton">Reset</button>
       </section>
 
+      <!-- payment-flow.js writes success/failure messages here. Needed because
+           payment-flow.js targets document.getElementById('result') after
+           returning from PayFast / while polling payment status. -->
+      <section class="result-card" id="result" aria-live="polite"></section>
+
       <section class="support-card" id="support">
         <h2>Need help?</h2>
         <p>Call Buscor on 013 754 6246/7/8 or visit the Help Centre for ticket and refund guidance.</p>
@@ -189,5 +226,6 @@
     </main>
 
     <script src="script.js"></script>
+    <script src="payment-flow.js"></script>
   </body>
 </html>

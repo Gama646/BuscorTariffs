@@ -1,4 +1,13 @@
 // Fully interactive Buscor Ticket purchasing frontend script
+
+// 3D Card Flip Handler
+const cardFlipContainer = document.getElementById('cardFlipContainer');
+if (cardFlipContainer) {
+  cardFlipContainer.addEventListener('click', function() {
+    this.classList.toggle('flipped');
+  });
+}
+
 const areaSelect = document.getElementById('areaSelect');
 const fromSelect = document.getElementById('fromSelect');
 const toSelect = document.getElementById('toSelect');
@@ -303,42 +312,27 @@ validateCardButton?.addEventListener('click', async () => {
   }
 });
 
-// Purchase payment
+// Real payment flow via PayFast
 payButton?.addEventListener('click', async () => {
   if (!cardValid) return alert('Validate alias first');
-  
+
   const val = ticketTypeSelect.value;
   if (!val) return alert('Select a ticket type');
-  
-  const [ticketType, price] = val.split('|');
+
+  const [ticketType] = val.split('|');
   const to = toSelect.value;
   const from = fromSelect.value;
   const area = areaSelect.value;
-  
-  const trip = { 
-    area, 
-    from, 
-    to, 
-    ticketType: ticketType, 
-    price: `R${price}` 
-  };
-  
-  try {
-    const res = await fetch('/api/purchases', { 
-      method: 'POST', 
-      headers: { 'Content-Type': 'application/json' }, 
-      body: JSON.stringify({ aliasNo: validatedAlias, trip }) 
-    });
-    const data = await res.json();
-    if (data && data.success && data.slip && data.slip.txId) {
-      window.open(`/api/purchases/${data.slip.txId}`, '_blank');
-      alert(`Success! Ticket purchased. Transaction ID: ${data.slip.txId}`);
-    } else {
-      alert(data.message || 'Purchase failed');
-    }
-  } catch (err) {
-    console.error(err);
-    alert('Purchase error');
+
+  const resultContainer = document.getElementById('result');
+  if (resultContainer) {
+    resultContainer.innerHTML = '<div class="info-box">Preparing your payment…</div>';
+  }
+
+  if (typeof window.startPayment === 'function') {
+    await window.startPayment(validatedAlias, area, from, to, ticketType);
+  } else {
+    alert('Payment flow is unavailable right now.');
   }
 });
 
