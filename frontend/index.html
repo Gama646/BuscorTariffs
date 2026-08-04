@@ -41,13 +41,18 @@
         </div>
 
         <aside class="info-panel">
-          <h2>Ticket information</h2>
-          <ul>
-            <li>Tickets can be bought from Buscor outlets and selected Spar/Boxer stores.</li>
-            <li>Weekly scholar tickets: R144.00</li>
-            <li>Monthly scholar tickets: R634.00</li>
-            <li>Routes cover Nelspruit, White River, Malalane and surrounding towns.</li>
-          </ul>
+          <div class="info-media">
+            <img src="images.jfif" alt="Buscor passenger transport" />
+          </div>
+          <div class="info-body">
+            <h2>Ticket information</h2>
+            <ul>
+              <li>Tickets can be bought from Buscor outlets and selected Spar/Boxer stores.</li>
+              <li>Weekly scholar tickets: R144.00</li>
+              <li>Monthly scholar tickets: R634.00</li>
+              <li>Routes cover Nelspruit, White River, Malalane and surrounding towns.</li>
+            </ul>
+          </div>
         </aside>
       </section>
 
@@ -179,25 +184,18 @@
           <!-- 3D Card Display -->
           <div class="card-display-section">
             <p class="card-instruction">👉 Find the Alias number on your card (click to flip)</p>
-            <div class="card-flip-container" id="cardFlipContainer">
+            <div class="card-flip-container" id="cardFlipContainer" aria-label="Buscor card demo, click to flip">
               <div class="card-flip-inner">
                 <!-- Front of card -->
                 <div class="card-face card-front">
-                  <div class="card-logo">🚌</div>
-                  <div class="card-brand">Buscor</div>
-                  <div class="card-subtitle">Passenger Card</div>
-                  <div class="card-number-label">ALIAS No:</div>
-                  <div class="card-number-highlight">01204-60242-8</div>
-                  <div class="card-bottom-text">VALID PASSENGER CARD</div>
+                  <img class="card-image" src="./public/frontcard.png" alt="Buscor card front demo" />
                 </div>
 
                 <!-- Back of card -->
                 <div class="card-face card-back">
-                  <div class="card-back-stripe"></div>
-                  <div class="card-back-content">
-                    <p class="card-back-label">CARDHOLDER</p>
+                  <img class="card-image" src="./public/backviewcard.png" alt="Buscor card back demo" />
+                  <div class="card-back-overlay">
                     <p class="card-back-instruction">Present this side to the driver</p>
-                    <p class="card-back-details">www.buscor.co.za</p>
                   </div>
                 </div>
               </div>

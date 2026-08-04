@@ -404,6 +404,67 @@ function createPaymentRouter({ cardsCollection, tripsCollection, purchasesCollec
   });
 
   // ---------------------------------------------------------------
+  // GET /api/payment/simulate/:txId  — Dev tool to simulate Payfast ITN
+  // ---------------------------------------------------------------
+  router.get('/simulate/:txId', async (req, res) => {
+    const { txId } = req.params;
+    try {
+      const purchase = await purchasesCollection.findOne({ txId });
+      if (!purchase) {
+        return res.status(404).json({ success: false, message: 'Transaction not found.' });
+      }
+
+      if (purchase.status === 'paid') {
+        return res.status(200).json({ success: true, message: 'Already paid.' });
+      }
+
+      const now = new Date();
+      // buildTicketFromPurchase handles startsNextMonday etc.
+      const ticket = buildTicketFromPurchase(purchase, txId, { pf_payment_id: 'SIMULATED' }, now, purchase.startsNextMonday);
+
+      const pad = n => String(n).padStart(2, '0');
+      const formatDateTime = d => d ? `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}` : null;
+      const formatDateOnly = d => d ? `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}` : null;
+
+      const receipt = {
+        cardNo:     purchase.cardNo   || null,
+        approval:   'SIMULATED',
+        date:       formatDateTime(now),
+        aliasNo:    purchase.aliasNo,
+        price:      `${Number(purchase.amount)} ZAR`,
+        ticketId:   txId,
+        type:       purchase.trip.ticketType,
+        startDate:  ticket ? formatDateOnly(ticket.startDate) : null,
+        validDays:  ticket ? ticket.validDays : null,
+        slotNo:     1,
+        from:       purchase.trip.from,
+        to:         purchase.trip.to,
+      };
+
+      await purchasesCollection.updateOne(
+        { txId },
+        {
+          $set: {
+            status: 'paid',
+            failReason: null,
+            paidAt: now,
+            payfastPaymentId: 'SIMULATED',
+            payfast: { payment_status: 'COMPLETE', simulated: true },
+            ticket,
+            receipt,
+            updatedAt: now
+          }
+        }
+      );
+
+      return res.status(200).json({ success: true, message: 'Payment simulated successfully.' });
+    } catch (err) {
+      console.error('Simulate payment error:', err);
+      return res.status(500).json({ success: false, message: 'Server error.' });
+    }
+  });
+
+  // ---------------------------------------------------------------
   // Debug helper: inspect purchases collection content and count
   // ---------------------------------------------------------------
   router.get('/debug/purchases', async (req, res) => {
