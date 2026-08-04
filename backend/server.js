@@ -331,8 +331,25 @@ app.get('/api/trips', async (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`✓ Buscor backend server is running on http://localhost:${PORT}`);
+  
+  if (process.env.NGROK_AUTH_TOKEN) {
+    try {
+      const ngrok = require('ngrok');
+      console.log('→ Starting ngrok tunnel with provided auth token...');
+      const url = await ngrok.connect({
+        authtoken: process.env.NGROK_AUTH_TOKEN,
+        addr: PORT
+      });
+      process.env.PUBLIC_BASE_URL = url;
+      console.log(`✓ ngrok tunnel established at: ${url}`);
+      console.log(`✓ Payfast Webhook URL automatically updated to use this tunnel.`);
+    } catch (err) {
+      console.error('✗ Failed to start ngrok tunnel:', err);
+    }
+  }
+
   console.log(`✓ MongoDB Database: BuscorTeriffs`);
   console.log(`✓ API endpoints:`);
   console.log(`  POST /api/cards/validate - Validate Alias number (returns card info if valid)`);

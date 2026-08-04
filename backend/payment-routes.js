@@ -123,13 +123,12 @@ function createPaymentRouter({ cardsCollection, tripsCollection, purchasesCollec
 
   // PUBLIC_BASE_URL is the address PayFast can reach (e.g. your ngrok URL).
   // APP_BASE_URL is where the user's browser is redirected back to.
-  const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL;
   const APP_BASE_URL = process.env.APP_BASE_URL || 'http://localhost:5000';
 
   if (!MERCHANT_ID || !MERCHANT_KEY) {
     console.warn('⚠ PAYFAST_MERCHANT_ID / PAYFAST_MERCHANT_KEY not set — payment routes will fail.');
   }
-  if (!PUBLIC_BASE_URL) {
+  if (!process.env.PUBLIC_BASE_URL) {
     console.warn('⚠ PUBLIC_BASE_URL not set — PayFast will not be able to reach your ITN webhook. Use ngrok locally.');
   }
 
@@ -220,13 +219,13 @@ function createPaymentRouter({ cardsCollection, tripsCollection, purchasesCollec
         itemDescription: `Ticket type: ${trip.ticketType}`,
         returnUrl: `${APP_BASE_URL}/payment-success.html?txId=${txId}`,
         cancelUrl: `${APP_BASE_URL}/payment-cancelled.html?txId=${txId}`,
-        notifyUrl: `${PUBLIC_BASE_URL}/api/payment/notify`,
+        notifyUrl: `${process.env.PUBLIC_BASE_URL}/api/payment/notify`,
         merchantId: MERCHANT_ID,
         merchantKey: MERCHANT_KEY,
         passphrase: PASSPHRASE
       });
 
-      console.log(`→ Initiating payment ${txId}: notify_url=${PUBLIC_BASE_URL}/api/payment/notify`);
+      console.log(`→ Initiating payment ${txId}: notify_url=${process.env.PUBLIC_BASE_URL}/api/payment/notify`);
       console.log('→ Fields being sent to PayFast:', JSON.stringify(fields, null, 2));
       console.log('→ PayFast host:', getPayfastHost());
 
