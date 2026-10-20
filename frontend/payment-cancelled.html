@@ -9,7 +9,7 @@
 
     body {
       font-family: 'Segoe UI', Arial, sans-serif;
-      background: #f0f4f8;
+      background: #fff;
       min-height: 100vh;
       display: flex;
       align-items: center;
@@ -20,18 +20,18 @@
     .card {
       background: #fff;
       border-radius: 12px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      border: 1px solid #000;
       padding: 40px 36px;
       max-width: 440px;
       width: 100%;
       text-align: center;
     }
 
-    .logo  { font-size: 1.6rem; font-weight: 700; color: #1a3c6e; margin-bottom: 28px; }
-    .icon  { font-size: 3rem; margin-bottom: 16px; }
-    h2     { color: #744210; font-size: 1.4rem; margin-bottom: 12px; }
-    p      { color: #4a5568; font-size: 0.95rem; line-height: 1.6; margin-bottom: 8px; }
-    .ref   { font-size: 0.82rem; color: #a0aec0; margin: 12px 0 28px; }
+    .logo  { display: block; width: auto; height: 112px; max-width: 100%; object-fit: contain; filter: grayscale(1) contrast(1.5); margin: 0 auto 28px; }
+    .icon  { font-size: 3rem; filter: grayscale(1); margin-bottom: 16px; }
+    h2     { color: #000; font-size: 1.4rem; margin-bottom: 12px; }
+    p      { color: #000; font-size: 0.95rem; line-height: 1.6; margin-bottom: 8px; }
+    .ref   { font-size: 0.82rem; color: #000; margin: 12px 0 28px; }
 
     .btn {
       display: inline-block;
@@ -44,15 +44,15 @@
       text-decoration: none;
       margin: 6px;
     }
-    .btn-primary   { background: #1a3c6e; color: #fff; }
-    .btn-secondary { background: #e2e8f0; color: #2d3748; }
-    .btn-primary:hover   { background: #14306e; }
-    .btn-secondary:hover { background: #cbd5e0; }
+    .btn-primary   { background: #000; color: #fff; }
+    .btn-secondary { background: #fff; color: #000; border: 1px solid #000; }
+    .btn-primary:hover   { background: #000; }
+    .btn-secondary:hover { background: #fff; }
   </style>
 </head>
 <body>
 <div class="card">
-  <div class="logo">🚌 Buscor</div>
+  <img class="logo" src="/public/buscor_logoBlacknWhite.png" alt="Buscor (Pty) Ltd" />
   <div class="icon">⚠️</div>
   <h2>Payment Cancelled</h2>
   <p>You cancelled the payment. No money was taken and no trips were loaded onto your card.</p>

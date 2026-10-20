@@ -53,8 +53,9 @@ function getTicketStartDate(purchaseDate) {
 // Rule: tickets shorter than a full week (<7 days) exclude Sunday (lowercase "s").
 // Tickets of 7 days or more include Sunday too (capital "S").
 function buildValidDaysCode(durationDays) {
-  const includesSunday = durationDays >= 7;
-  return 'MTWTFS' + (includesSunday ? 'S' : 's');
+  if (durationDays >= 7) return 'MTWTFSS';
+  if (durationDays === 6) return 'MTWTFSs';
+  return 'MTWTFss';
 }
 
 function formatExpiryDate(expiry) {
@@ -128,8 +129,8 @@ function createPaymentRouter({ cardsCollection, tripsCollection, purchasesCollec
   if (!MERCHANT_ID || !MERCHANT_KEY) {
     console.warn('⚠ PAYFAST_MERCHANT_ID / PAYFAST_MERCHANT_KEY not set — payment routes will fail.');
   }
-  if (!process.env.PUBLIC_BASE_URL) {
-    console.warn('⚠ PUBLIC_BASE_URL not set — PayFast will not be able to reach your ITN webhook. Use ngrok locally.');
+  if (!/^https:\/\//i.test(String(process.env.PUBLIC_BASE_URL || ''))) {
+    console.warn('⚠ PUBLIC_BASE_URL is not a public HTTPS URL yet — local PayFast checkout will be available after ngrok starts.');
   }
 
   // ---------------------------------------------------------------
@@ -138,6 +139,15 @@ function createPaymentRouter({ cardsCollection, tripsCollection, purchasesCollec
   router.post('/initiate', async (req, res) => {
     console.log('→ /api/payment/initiate called', { body: req.body });
     const { aliasNo, area, from, to, ticketType } = req.body;
+
+    const publicBaseUrl = String(process.env.PUBLIC_BASE_URL || '').replace(/\/$/, '');
+    if (!publicBaseUrl || !/^https:\/\//i.test(publicBaseUrl)) {
+      console.error('→ Payment blocked: PUBLIC_BASE_URL is missing or not HTTPS', { publicBaseUrl });
+      return res.status(503).json({
+        success: false,
+        message: 'Payment service is temporarily unavailable. Please try again shortly.'
+      });
+    }
 
     if (!aliasNo || !from || !to || !ticketType) {
       console.warn('→ /api/payment/initiate missing fields', { aliasNo, area, from, to, ticketType });
@@ -210,7 +220,7 @@ function createPaymentRouter({ cardsCollection, tripsCollection, purchasesCollec
       };
 
       const insertResult = await purchasesCollection.insertOne(purchase);
-      console.log('✓ purchase document created', { txId, insertedId: insertResult.insertedId, purchase });
+      console.log('✓ purchase document created', { txId, insertedId: insertResult.insertedId });
 
       const fields = buildPaymentFields({
         txId,
@@ -219,14 +229,13 @@ function createPaymentRouter({ cardsCollection, tripsCollection, purchasesCollec
         itemDescription: `Ticket type: ${trip.ticketType}`,
         returnUrl: `${APP_BASE_URL}/payment-success.html?txId=${txId}`,
         cancelUrl: `${APP_BASE_URL}/payment-cancelled.html?txId=${txId}`,
-        notifyUrl: `${process.env.PUBLIC_BASE_URL}/api/payment/notify`,
+        notifyUrl: `${publicBaseUrl}/api/payment/notify`,
         merchantId: MERCHANT_ID,
         merchantKey: MERCHANT_KEY,
         passphrase: PASSPHRASE
       });
 
-      console.log(`→ Initiating payment ${txId}: notify_url=${process.env.PUBLIC_BASE_URL}/api/payment/notify`);
-      console.log('→ Fields being sent to PayFast:', JSON.stringify(fields, null, 2));
+      console.log(`→ Initiating payment ${txId}: notify_url=${publicBaseUrl}/api/payment/notify`);
       console.log('→ PayFast host:', getPayfastHost());
 
       return res.status(200).json({

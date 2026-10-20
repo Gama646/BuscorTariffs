@@ -336,17 +336,18 @@ app.listen(PORT, async () => {
   
   if (process.env.NGROK_AUTH_TOKEN) {
     try {
-      const ngrok = require('ngrok');
+      const ngrok = require('@ngrok/ngrok');
       console.log('→ Starting ngrok tunnel with provided auth token...');
-      const url = await ngrok.connect({
-        authtoken: process.env.NGROK_AUTH_TOKEN,
-        addr: PORT
+      const listener = await ngrok.forward({
+        addr: PORT,
+        authtoken: process.env.NGROK_AUTH_TOKEN
       });
+      const url = listener.url();
       process.env.PUBLIC_BASE_URL = url;
       console.log(`✓ ngrok tunnel established at: ${url}`);
       console.log(`✓ Payfast Webhook URL automatically updated to use this tunnel.`);
     } catch (err) {
-      console.error('✗ Failed to start ngrok tunnel:', err);
+      console.error('✗ Failed to start ngrok tunnel. The backend is still available locally, but PayFast webhooks will not be reachable unless PUBLIC_BASE_URL is configured:', err);
     }
   }
 

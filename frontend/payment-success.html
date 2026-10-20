@@ -10,7 +10,7 @@
 
     body {
       font-family: 'Segoe UI', Arial, sans-serif;
-      background: #f0f4f8;
+      background: #fff;
       min-height: 100vh;
       display: flex;
       align-items: center;
@@ -21,22 +21,25 @@
     .card {
       background: #fff;
       border-radius: 12px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      border: 1px solid #000;
       padding: 48px 40px;
       max-width: 500px;
       width: 100%;
       text-align: center;
     }
 
-    .logo { 
-      font-size: 2rem; 
-      font-weight: 700; 
-      color: #1a3c6e; 
-      margin-bottom: 8px; 
+    .logo {
+      display: block;
+      width: auto;
+      height: 112px;
+      max-width: 100%;
+      object-fit: contain;
+      filter: grayscale(1) contrast(1.5);
+      margin: 0 auto 8px;
     }
     
     .subtitle {
-      color: #718096;
+      color: #000;
       font-size: 0.9rem;
       margin-bottom: 32px;
     }
@@ -44,8 +47,9 @@
     .spinner {
       width: 52px; 
       height: 52px;
-      border: 5px solid #e2e8f0;
-      border-top-color: #1a3c6e;
+      border: 5px solid #fff;
+      border-top-color: #000;
+      outline: 1px solid #000;
       border-radius: 50%;
       animation: spin 0.9s linear infinite;
       margin: 0 auto 20px;
@@ -53,40 +57,66 @@
     @keyframes spin { to { transform: rotate(360deg); } }
 
     .status-msg { 
-      color: #4a5568; 
+      color: #000;
       font-size: 1rem; 
       margin-bottom: 8px; 
     }
     .sub-msg { 
-      color: #a0aec0; 
+      color: #000;
       font-size: 0.875rem; 
     }
 
     .success-icon {
-      font-size: 4rem;
-      margin-bottom: 16px;
+      width: 42px;
+      height: 24px;
+      border-left: 6px solid #000;
+      border-bottom: 6px solid #000;
+      transform: rotate(-45deg);
+      margin: 0 auto 16px;
+    }
+
+    .failure-icon {
+      width: 36px;
+      height: 36px;
+      position: relative;
+      margin: 0 auto 16px;
+    }
+
+    .failure-icon::before,
+    .failure-icon::after {
+      content: '';
+      position: absolute;
+      top: 17px;
+      left: 0;
+      width: 36px;
+      border-top: 4px solid #000;
+      transform: rotate(45deg);
+    }
+
+    .failure-icon::after {
+      transform: rotate(-45deg);
     }
 
     .success-title {
-      color: #276749;
+      color: #000;
       font-size: 1.8rem;
       font-weight: 700;
       margin-bottom: 8px;
     }
 
     .success-sub {
-      color: #4a5568;
+      color: #000;
       font-size: 1rem;
       margin-bottom: 24px;
     }
 
     .receipt-info {
-      background: #f7fafc;
+      background: #fff;
       border-radius: 8px;
       padding: 16px 20px;
       text-align: left;
       margin-bottom: 24px;
-      border: 1px solid #e2e8f0;
+      border: 1px solid #000;
     }
 
     .receipt-row {
@@ -94,11 +124,11 @@
       justify-content: space-between;
       padding: 6px 0;
       font-size: 0.9rem;
-      color: #2d3748;
+      color: #000;
     }
 
     .receipt-row .label {
-      color: #718096;
+      color: #000;
       font-weight: 500;
     }
 
@@ -107,7 +137,7 @@
     }
 
     .receipt-row.total .value {
-      color: #1a3c6e;
+      color: #000;
       font-size: 1.1rem;
       font-weight: 700;
     }
@@ -126,36 +156,35 @@
     }
 
     .btn-primary {
-      background: #1a3c6e;
+      background: #000;
       color: #fff;
     }
 
     .btn-primary:hover {
-      background: #14306e;
+      background: #000;
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(26, 60, 110, 0.3);
     }
 
     .btn-secondary {
-      background: #e2e8f0;
-      color: #2d3748;
+      background: #fff;
+      color: #000;
+      border: 1px solid #000;
       margin-top: 12px;
     }
 
     .btn-secondary:hover {
-      background: #cbd5e0;
+      background: #fff;
       transform: translateY(-2px);
     }
 
     .btn-success {
-      background: #276749;
+      background: #000;
       color: #fff;
     }
 
     .btn-success:hover {
-      background: #1e5438;
+      background: #000;
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(39, 103, 73, 0.3);
     }
 
     .btn:disabled {
@@ -182,29 +211,27 @@
     }
 
     .failure-title {
-      color: #9b2335;
+      color: #000;
       font-size: 1.8rem;
       font-weight: 700;
       margin-bottom: 8px;
     }
 
     .failure-msg {
-      color: #4a5568;
+      color: #000;
       font-size: 1rem;
       margin-bottom: 24px;
     }
 
     /* Hidden receipt for PDF - EXACT match to receiptNo.png */
     .hidden-receipt {
-      position: absolute;
-      left: -9999px;
-      top: 0;
-      width: 210mm;
+      width: 190mm;
+      margin: 0 auto;
       background: #fff;
-      padding: 20px;
+      padding: 0;
       font-family: 'Courier New', monospace;
       font-size: 12px;
-      line-height: 2;
+      line-height: 1.5;
       box-sizing: border-box;
     }
 
@@ -222,8 +249,9 @@
       top: 50%;
       left: 50%;
       margin: -10px 0 0 -10px;
-      border: 3px solid rgba(255,255,255,0.3);
-      border-top-color: #fff;
+      border: 3px solid #fff;
+      border-top-color: #000;
+      outline: 1px solid #000;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
@@ -237,8 +265,7 @@
 <body>
 
 <div class="card">
-  <div class="logo">🚌 Buscor</div>
-  <div class="subtitle">Ticketing System</div>
+  <img class="logo" src="/public/buscor_logoBlacknWhite.png" alt="Buscor (Pty) Ltd" />
 
   <!-- Loading State -->
   <div id="loadingState">
@@ -249,7 +276,7 @@
 
   <!-- Success State -->
   <div id="successState" style="display: none;">
-    <div class="success-icon">✅</div>
+    <div class="success-icon" aria-hidden="true"></div>
     <div class="success-title">Payment Successful!</div>
     <div class="success-sub">Your ticket has been loaded onto your card.</div>
 
@@ -259,15 +286,15 @@
 
     <div class="button-group">
       <button class="btn btn-success" id="downloadBtn">
-        📥 Download Receipt (PDF)
+        Download Receipt (PDF)
       </button>
-      <a class="btn btn-secondary" href="/">🏠 Back to Home</a>
+      <a class="btn btn-secondary" href="/">Back to Home</a>
     </div>
   </div>
 
   <!-- Failure State -->
   <div id="failureState" style="display: none;">
-    <div class="failure-icon">❌</div>
+    <div class="failure-icon" aria-hidden="true"></div>
     <div class="failure-title">Payment Not Successful</div>
     <div class="failure-msg" id="failureMsg">
       No trips were loaded onto your card. Please try again.
@@ -277,11 +304,12 @@
 </div>
 
 <!-- Hidden receipt for PDF generation - EXACT match to receiptNo.png format -->
-<div id="receiptContainer" class="hidden-receipt">
-  <div style="width: 100%; min-height: 297mm; padding: 20px; font-family: 'Courier New', monospace; font-size: 12px; line-height: 2; background: #fff; box-sizing: border-box;">
+<div id="receiptContainer" class="hidden-receipt" style="display: none;">
+  <div style="width: 100%; padding: 12mm; font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.5; background: #fff; box-sizing: border-box;">
     
     <!-- TICKET RECEIPT Header -->
     <div style="text-align: center; margin-bottom: 16px; border-bottom: 2px solid #000; padding-bottom: 8px;">
+      <img src="/public/buscor_logoBlacknWhite.png" alt="Buscor (Pty) Ltd" style="display: block; width: auto; height: 85px; max-width: 100%; object-fit: contain; filter: grayscale(1) contrast(1.5); margin: 0 auto 8px;" />
       <div style="font-size: 14px; font-weight: 700; letter-spacing: 2px;">TICKET RECEIPT</div>
     </div>
 
@@ -447,7 +475,7 @@
 
     // Get the correct Valid Days based on ticket duration
     const durationDays = parseDurationDays(slip.trip.ticketType);
-    const validDays = getValidDays(durationDays);
+    const validDays = (t && t.validDays) || getValidDays(durationDays);
 
     // Display receipt info on the card - EXACT fields only
     document.getElementById('receiptInfo').innerHTML = `
@@ -471,7 +499,7 @@
         <span class="label">Price</span>
         <span class="value">${priceLabel}</span>
       </div>
-      <div style="border-top: 1px dashed #ccc; margin: 8px 0;"></div>
+      <div style="border-top: 1px dashed #000; margin: 8px 0;"></div>
       <div class="receipt-row">
         <span class="label">Ticket Id</span>
         <span class="value">${slip.txId}</span>
@@ -540,47 +568,62 @@
 
     const element = document.getElementById('receiptContainer');
 
-    element.style.position = 'absolute';
-    element.style.left = '-9999px';
-    element.style.top = '0';
     element.style.display = 'block';
 
-    void element.offsetHeight;
-
-    const opt = {
-      margin: 0,
-      filename: `Buscor-Receipt-${receiptData.txId}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { 
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        width: 794,
-        height: 1123
-      },
-      jsPDF: { 
-        unit: 'mm', 
-        format: 'a4', 
-        orientation: 'portrait' 
-      }
+    const resetReceipt = () => {
+      element.style.display = 'none';
     };
 
-    html2pdf()
-      .set(opt)
-      .from(element)
-      .save()
+    const opt = {
+      margin: 10,
+      filename: `Buscor-Receipt-${receiptData.txId}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        scrollX: 0,
+        scrollY: 0
+      },
+      jsPDF: {
+        unit: 'mm',
+        format: 'a4',
+        orientation: 'portrait'
+      },
+      pagebreak: { mode: ['avoid-all', 'css'] }
+    };
+
+    const logo = element.querySelector('img');
+    const logoReady = logo.complete
+      ? (logo.naturalWidth > 0
+          ? Promise.resolve()
+          : Promise.reject(new Error('Receipt logo failed to load.')))
+      : new Promise((resolve, reject) => {
+          logo.addEventListener('load', resolve, { once: true });
+          logo.addEventListener('error', () => reject(new Error('Receipt logo failed to load.')), { once: true });
+        });
+
+    Promise.all([logoReady, new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))])
+      .then(() => html2pdf().set(opt).from(element).toPdf().get('pdf'))
+      .then(pdf => {
+        if (pdf.getNumberOfPages() !== 1) {
+          throw new Error(`Receipt PDF should contain one page, but generated ${pdf.getNumberOfPages()}.`);
+        }
+        return pdf.save(opt.filename);
+      })
       .then(() => {
+        resetReceipt();
         btn.disabled = false;
         btn.classList.remove('btn-loading');
-        btn.textContent = '📥 Download Receipt (PDF)';
-        element.style.display = 'none';
+        btn.textContent = 'Download Receipt (PDF)';
       })
       .catch((err) => {
         console.error('PDF generation failed:', err);
+        resetReceipt();
         btn.disabled = false;
         btn.classList.remove('btn-loading');
-        btn.textContent = '📥 Download Receipt (PDF)';
-        element.style.display = 'none';
+        btn.textContent = 'Download Receipt (PDF)';
         alert('Failed to generate PDF. Please try again or contact support.');
       });
   }
@@ -611,17 +654,17 @@
         }
       } else if (data.status === 'failed') {
         showFailure('Payment was not successful' + (data.failReason ? ` (${data.failReason})` : '') + '.');
-      } else if (attempt < 20) {
+      } else if (attempt < 60) {
         setTimeout(() => checkStatus(attempt + 1), 1500);
       } else {
-        showFailure(`Payment is taking longer than expected. Contact support with reference: ${txId}`);
+        showFailure(`Payment confirmation is delayed. Your payment may still be processing. Contact support with reference: ${txId}`);
       }
     } catch (err) {
       console.error('Status check error:', err);
-      if (attempt < 20) {
+      if (attempt < 60) {
         setTimeout(() => checkStatus(attempt + 1), 2000);
       } else {
-        showFailure('Network error while confirming payment.');
+        showFailure(`We could not confirm the payment yet. Contact support with reference: ${txId}`);
       }
     }
   }
